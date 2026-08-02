@@ -39,7 +39,7 @@ jobs:
         env:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           DISCORD_SUMMARY_WEBHOOK: ${{ secrets.DISCORD_SUMMARY_WEBHOOK }}
-        run: python LHK_trading_script_v2.py
+        run: python LHK_trading_script_v3.py
 
       - name: 💾 更新 Dashboard 網頁檔案
         run: |
