@@ -1,4 +1,4 @@
-name: v2 UAT Backtest Loop
+name: v3 UAT Backtest Loop
 on:
   workflow_dispatch:
     inputs:
