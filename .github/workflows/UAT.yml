@@ -30,14 +30,17 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 🌟 關鍵改裝：加入 Cache 機制，以後不用每次重新下載 200MB+ 數據
+      # 🌟 官方標準寫法：將日期寫入 GITHUB_OUTPUT，避免 env 讀取不到的錯誤
+      - name: 獲取今日日期
+        id: date_step
+        run: echo "today=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      # 🌟 使用 steps.date_step.outputs.today 作為每日唯一 Key
       - name: 💾 Cache market data
         uses: actions/cache@v3
         with:
           path: docs/UAT/market_data_cache.pkl
-          key: ${{ runner.os }}-market-data-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-market-data-
+          key: ${{ runner.os }}-market-data-${{ steps.date_step.outputs.today }}
 
       - name: 📦 安裝依賴工具
         run: pip install -r requirements.txt
