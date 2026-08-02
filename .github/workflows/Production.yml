@@ -23,14 +23,17 @@ jobs:
         with:
           python-version: '3.10'
 
-      # 🌟 加入 Cache 機制：防止因為讀取數據太慢而導致 Action 超時
+      # 🌟 官方標準寫法：獲取今日日期
+      - name: 獲取今日日期
+        id: date_step
+        run: echo "today=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+
+      # 🌟 修正1：對準 Production 嘅快取路徑 (prod_market_data_cache.pkl) 同每日 Key
       - name: 💾 Cache market data
         uses: actions/cache@v3
         with:
-          path: docs/UAT/market_data_cache.pkl
-          key: ${{ runner.os }}-prod-market-data-${{ github.run_id }}
-          restore-keys: |
-            ${{ runner.os }}-prod-market-data-
+          path: prod_market_data_cache.pkl
+          key: ${{ runner.os }}-prod-market-data-${{ steps.date_step.outputs.today }}
 
       - name: 📦 安裝依賴工具
         run: pip install -r requirements.txt
@@ -46,11 +49,11 @@ jobs:
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           
-          # 1. 強制設定忽略清單，確保 Git 永遠唔會理個 pkl 檔
-          echo "market_data_cache.pkl" > docs/UAT/.gitignore
+          # 🌟 修正2：改為在根目錄設定 .gitignore，徹底封殺所有 .pkl 快取檔被推上 Git 嘅風險
+          echo "*.pkl" >> .gitignore
           
-          # 2. 將所有 docs 裡面嘅改動加入暫存區
-          git add docs/
+          # 2. 將 docs 資料夾改動 以及 .gitignore 加入暫存區
+          git add docs/ .gitignore
           
           # 3. 🌟 關鍵修正：先 Commit (打包存檔)，清空工作台
           git commit -m "Auto-update Dashboard - Production" || echo "No changes to commit"
