@@ -53,7 +53,7 @@ jobs:
           do
             echo "⏰ 正在啟動時光機：回溯 $i 天..."
             export UAT_DAYS_AGO=$i
-            python LHK_trading_script_backtest_v2.py
+            python LHK_trading_script_backtest_v3.py
             sleep 3
           done
 
