@@ -1,4 +1,4 @@
-name: v2 Production
+name: v3 Production
 
 on:
   schedule:
