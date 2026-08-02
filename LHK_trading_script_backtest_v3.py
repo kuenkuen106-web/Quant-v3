@@ -512,9 +512,9 @@ else:
 rs_momentum = rs_rank - rs_rank.shift(20)
 
 # =============================================================================
-# MODULE 4 & 5 — 雙策略判定引擎與自動結算 (🚀 向量化極速版)
+# MODULE 4 & 5 — 雙策略判定引擎與自動結算 (🚀 2026年7月終極進化版)
 # =============================================================================
-print(f"⏳ [4-6/7] 正在按 {today_str} 視角進行策略演算 (啟動極速向量化)...")
+print(f"⏳ [4-5/7] 正在按 {today_str} 視角進行策略演算 (啟動極速向量化)...")
 
 # 1. 處理現有持倉結案
 current_prices = closes.iloc[-1].to_dict()
@@ -534,7 +534,7 @@ for trade in trade_history:
             buy_px = trade.get('px')
             strat_tag = trade.get('tag', '')
             trade['last_px'] = now_px
-
+            
             if now_px > buy_px * 10 or now_px < buy_px * 0.1: continue
             if 'partial_tp_hit' not in trade: trade['partial_tp_hit'] = False
             if 'initial_sl' not in trade: trade['initial_sl'] = trade['sl']
@@ -549,7 +549,7 @@ for trade in trade_history:
             if not trade['partial_tp_hit'] and today_high >= tp1_price and initial_risk > 0:
                 trade['partial_tp_hit'] = True
                 trade['sl'] = buy_px
-                print(f"🎯 [分注系統] {tk} 觸發 TP1 ({tp1_price})，保本鎖定。")
+                print(f"🎯 [分注系統] {tk} 觸發 TP1 ({tp1_price})，鎖定 75% 利潤並保本。")
 
             # --- 最終結案判定 (3-Way Classification) ---
             tp, sl = trade.get('tp'), trade.get('sl')
@@ -557,7 +557,7 @@ for trade in trade_history:
             hit_sl = sl and today_low <= sl
             
             if trade['partial_tp_hit']:
-                # 🌟 改善三：雙軌放飛制 (短線 5 日，波段 20 日)
+                # 🌟 雙軌放飛制 (短線 5 日，波段 20 日)
                 tk_trail_low = dict_low5.get(tk, today_low) if is_short_term else dict_low20.get(tk, today_low)
                 
                 if today_low <= tk_trail_low:
@@ -591,7 +591,7 @@ curr_vols = vols.iloc[-1]
 # 平均成交額 (20日)
 dollar_vol_20 = (closes * vols).rolling(20).mean().iloc[-1]
 
-# 布林帶 (Bollinger Bands)
+# 布林帶 (Bollinger Bands) & SMA20
 sma20_all = closes.rolling(20).mean()
 std20_all = closes.rolling(20).std()
 bb_lower_all = sma20_all - (2 * std20_all)
@@ -601,11 +601,13 @@ bb_width_min120 = bb_width_all.rolling(120).min().iloc[-1]
 # ATR
 atr_14 = (highs - lows).rolling(14).mean().iloc[-1]
 
-# RSI
+# ML-RSI 核心：保留時間序列以計算動態標準差
 delta = closes.diff()
 gain = delta.where(delta > 0, 0).rolling(14).mean()
 loss = (-delta.where(delta < 0, 0)).rolling(14).mean()
-rsi_14 = (100 - (100 / (1 + gain / loss))).iloc[-1]
+rsi_all = 100 - (100 / (1 + gain / loss))
+rsi_14 = rsi_all.iloc[-1]
+rsi_std_14 = rsi_all.rolling(14).std().iloc[-1]
 
 # VCP 形態參數 (Base Drawdown & Recent Volatility)
 max60 = closes.rolling(60).max()
@@ -621,11 +623,28 @@ sma200_all = closes.rolling(200).mean()
 max120_all = closes.rolling(120).max() # 半年高位
 max10_prev_all = closes.shift(1).rolling(10).max() # 尋日為止嘅10日高位 (阻力線)
 
+# DMA50 (偏離度) 與 SMC 平均實體
+dma50_all = (closes - sma50_all) / sma50_all
+avg_body_all = abs(closes - opens).rolling(14).mean()
+
+# 🌟 7月27日最新升級：滾動 VWAP 與 VAVS 巨鯨吸收率
+typical_price = (highs + lows + closes) / 3
+vwap_20_all = (typical_price * vols).rolling(20).sum() / vols.rolling(20).sum()
+daily_spread = highs - lows
+vavs_all = vols / (daily_spread + 1e-5)
+vavs_ma20_all = vavs_all.rolling(20).mean()
+
 # Volume MA
 vol_ma50 = vols.rolling(50).mean().iloc[-1]
 vol_ma20 = vols.rolling(20).mean().iloc[-1]
 
-# 👇 將最終結果轉為 Dict 以達到 O(1) 極速查詢 (慳 CPU 神技)
+# 宏觀事件避險 (Macro Event Filter)
+import datetime
+today_date = closes.index[-1]
+current_month = today_date.month
+is_cpi_eve = (today_date.month == 7 and today_date.day == 13)
+
+# 👇 將最終結果轉為 Dict 以達到 O(1) 極速查詢
 dict_dollar_vol = dollar_vol_20.to_dict()
 dict_rs = rs_rank.iloc[-1].to_dict()
 dict_mom = rs_momentum.iloc[-1].to_dict()
@@ -634,21 +653,27 @@ dict_bb_width = bb_width_all.iloc[-1].to_dict()
 dict_bb_width_min120 = bb_width_min120.to_dict()
 dict_atr = atr_14.to_dict()
 dict_rsi = rsi_14.to_dict()
+dict_rsi_std = rsi_std_14.to_dict()
 dict_base_dd = base_dd.to_dict()
 dict_rec_volat = rec_volat.to_dict()
 dict_vol_ma50 = vol_ma50.to_dict()
-
 dict_vol_ma20 = vol_ma20.to_dict()
 dict_prev_price = prev_prices.to_dict()
 dict_curr_open = curr_opens.to_dict()
 dict_curr_vol = curr_vols.to_dict()
-dict_prev_vol = vols.iloc[-2].to_dict()
 dict_curr_high = highs.iloc[-1].to_dict()
 dict_curr_low = lows.iloc[-1].to_dict()
+dict_prev_high = highs.shift(1).iloc[-1].to_dict()
+dict_sma20 = sma20_all.iloc[-1].to_dict()
 dict_sma50 = sma50_all.iloc[-1].to_dict()
 dict_sma200 = sma200_all.iloc[-1].to_dict()
+dict_dma50 = dma50_all.iloc[-1].to_dict()
+dict_avg_body = avg_body_all.iloc[-1].to_dict()
 dict_max120 = max120_all.iloc[-1].to_dict()
 dict_max10_prev = max10_prev_all.iloc[-1].to_dict()
+dict_vwap20 = vwap_20_all.iloc[-1].to_dict()
+dict_vavs = vavs_all.iloc[-1].to_dict()
+dict_vavs_ma = vavs_ma20_all.iloc[-1].to_dict()
 # =========================================================================
 
 # 找出美股成交額 > 500萬 USD 的股票
@@ -659,8 +684,8 @@ jp_mask = (dollar_vol_20.index.str.endswith('.T')) & (dollar_vol_20 >= 300_000_0
 # 合併符合資格的名單
 valid_tickers = dollar_vol_20[us_mask | jp_mask].index.tolist()
 
-# 踢走大盤指數與 RS 無效的新股
-valid_tickers = [t for t in valid_tickers if t not in ['SPY', '^VIX', '^N225'] and not pd.isna(dict_rs.get(t))]
+# 🛡️ 終極修復：踢走大盤指數，並加入 np.nan 預防 pd.isna 報錯
+valid_tickers = [t for t in valid_tickers if t not in ['SPY', '^VIX', '^N225'] and not pd.isna(dict_rs.get(t, np.nan))]
 
 print(f"🧹 過濾成交量低迷股票後，掃描名單由 {len(ALL_TICKERS)} 縮減至 {len(valid_tickers)} 隻！")
 
@@ -669,7 +694,6 @@ print(f"🧹 過濾成交量低迷股票後，掃描名單由 {len(ALL_TICKERS)}
 # =========================================================================
 for ticker in valid_tickers:
     try:
-        # 因為上面已經做咗過濾，呢度唔使再 check pd.isna(rs) 同 dollar_vol 啦！
         rs = dict_rs.get(ticker)
         cp = float(current_prices[ticker])
         is_jp = ticker.endswith('.T')
@@ -678,14 +702,13 @@ for ticker in valid_tickers:
         min_price_threshold = 100 if is_jp else 1
         if cp < min_price_threshold: continue
         
-        # 攞出對應嘅燈號
         ticker_macro = jp_macro_status if is_jp else us_macro_status 
 
         rs_mom = dict_mom.get(ticker)
         catr = float(dict_atr.get(ticker))
         rsi_val = float(dict_rsi.get(ticker))
         
-        # 👇 每日更新「目前持倉」的現時指標 (curr_metric)
+        # 每日更新「目前持倉」的現時指標
         for t in trade_history:
             if t.get('status') == 'OPEN' and t.get('tk') == ticker:
                 if '超賣' in t.get('tag', ''):
@@ -693,61 +716,106 @@ for ticker in valid_tickers:
                 else:
                     t['curr_metric'] = f"RS: {int(rs)}"
 
-        # 波段策略 (Swing) 的 RS 門檻過濾
         if rs < PQR_SWING_MIN: continue
 
-        # 提取 VCP 雛形數據
+        # 提取高階量化特徵參數
         v_base_dd = dict_base_dd.get(ticker)
         v_rec_vol = dict_rec_volat.get(ticker)
         c_vol = dict_curr_vol.get(ticker)
         v_ma20 = dict_vol_ma20.get(ticker)
+        v_ma50 = dict_vol_ma50.get(ticker)
         
-        # 提取趨勢與突破阻力
+        sma20 = dict_sma20.get(ticker)
         sma50 = dict_sma50.get(ticker)
         sma200 = dict_sma200.get(ticker)
+        dma50 = dict_dma50.get(ticker)
         high120 = dict_max120.get(ticker)
         resist_10d = dict_max10_prev.get(ticker) 
         
+        c_op = dict_curr_open.get(ticker)
+        h_val = dict_curr_high.get(ticker)
+        l_val = dict_curr_low.get(ticker)
+        p_px = dict_prev_price.get(ticker)
+        b_lower = dict_bb_lower.get(ticker)
+        
+        avg_body_size = dict_avg_body.get(ticker, 0)
+        current_body_size = abs(cp - c_op)
+        prev_high = dict_prev_high.get(ticker, 9999)
+        rsi_std = dict_rsi_std.get(ticker, 5)
+        low5_min = dict_low5.get(ticker, 0)
+        low20_min = dict_low20.get(ticker, 0)
+        vwap20 = dict_vwap20.get(ticker, 0)
+        curr_vavs = dict_vavs.get(ticker, 0)
+        vavs_ma = dict_vavs_ma.get(ticker, 0)
+
+        # 🌟 微觀 K 線結構
+        full_range = h_val - l_val
+        candle_architecture_score = current_body_size / full_range if full_range > 0 else 0
+        is_solid_candle = candle_architecture_score >= 0.7
+        closing_strength = (cp - l_val) / full_range if full_range > 0 else 0
+
+        # =================================================================
+        # 📈 策略 1：波段建倉 (VCP 突破 / BB 擠壓) 
+        # 結合 AlphaTrend, SMC 訂單塊, AMD 洗盤, VWAP 機構護航
+        # =================================================================
         is_uptrend = (cp > sma50) and (sma50 > sma200)
         is_near_high = ((high120 - cp) / high120) <= 0.15
-        
-        # 🛡️ 優化 1：形態收窄微調至 12% 波幅，提高捕捉活躍領袖股勝率
         is_tight = (v_base_dd <= 0.35) and (v_rec_vol <= 0.12)
-        
-        # 🚀 今日帶量真突破
         is_breaking_out = (cp > resist_10d) and (c_vol > v_ma20 * 1.2)
         
-        is_vcp = is_uptrend and is_near_high and is_tight and is_breaking_out
-        is_bb_sqz = (dict_bb_width.get(ticker) <= dict_bb_width_min120.get(ticker) * 1.1)
+        is_alpha_trend = (rsi_val > 50) and (cp > (sma20 + 0.5 * catr))
+        is_institutional_ob = current_body_size > (1.5 * avg_body_size)
+        is_amd_manipulation = (low5_min <= low20_min * 1.01) and (cp > (low5_min + 0.5 * catr))
+        is_above_vwap = cp > vwap20
 
+        is_vcp = is_uptrend and is_near_high and is_tight and is_breaking_out and is_solid_candle and is_alpha_trend and is_institutional_ob and is_amd_manipulation and (not is_cpi_eve) and is_above_vwap
+        is_bb_sqz = (dict_bb_width.get(ticker) <= dict_bb_width_min120.get(ticker) * 1.1) and is_uptrend and is_alpha_trend and (not is_cpi_eve) and is_above_vwap
+
+        # =================================================================
+        # 📉 策略 2：短線游擊 (缺口動能 / 極度超賣)
+        # 結合 ML-RSI, MSS 結構轉變, 恐慌極值, 巨鯨吸收率
+        # =================================================================
+        gap_magnitude = (c_op - p_px) / p_px if p_px > 0 else 0
+        is_gap_up = (gap_magnitude >= 0.03) and (c_vol > v_ma20 * 2) and (cp > c_op) and (closing_strength >= 0.6)
+        
+        dynamic_oversold_threshold = max(18, 30 - (rsi_std * 0.5)) 
+        is_ml_oversold = (rsi_val < dynamic_oversold_threshold)
+        is_mss = cp > prev_high
+        is_volumetric_extreme = c_vol > (v_ma50 * 1.5)
+        is_whale_absorption = curr_vavs > (vavs_ma * 2.0)
+
+        is_oversold = is_ml_oversold and (cp < b_lower) and (dma50 < -0.15) and is_volumetric_extreme and (is_mss or is_whale_absorption)
+
+        # =================================================================
+        # ⚖️ 大市四象限過濾與動態止損 (Seasonal & Regime Control)
+        # =================================================================
+        is_red_light = '🔴' in ticker_macro or '🟠' in ticker_macro # 包含 Bear 與 Mild Bear
+        is_mild_bull = '🟡' in ticker_macro
+        
         trade_info = None 
-        tag_name = ""
-        sl_p, tp_p = 0, 0
-        risk_per_share = 0
-        entry_metric = ""
-
-        # 🛡️ 優化 2：放寬大盤大閘。只要不是「🔴防禦熊市」而且不是「🟡派發警告」，系統即通行
-        # 🌟 提取燈號狀態
-        is_red_light = '🔴' in ticker_macro
-        is_yellow_light = '🟡' in ticker_macro
+        tag_name, entry_metric = "", ""
+        sl_p, tp_p, tp1_price, risk_per_share = 0, 0, 0, 0
 
         if (is_vcp or is_bb_sqz):
-            # ⛔ 改善二 (煞車)：紅燈嚴禁任何波段新建倉！
-            if is_red_light: continue 
+            if is_red_light: continue # 熊市嚴禁突破建倉
             
             tag_name = "🏆 VCP 突破" if is_vcp else "💥 BB 擠壓"
-            sl_p = round(cp - 1.5 * catr, 2)
+            seasonal_vix_multiplier = 1.2 if current_month == 7 else 1.0 
+            
+            if is_mild_bull or current_month == 7:
+                sl_p = round(cp - (1.0 * catr * seasonal_vix_multiplier), 2)
+                target_r = 1.0 # 提早鎖定 75%
+            else:
+                sl_p = round(cp - 1.5 * catr, 2)
+                target_r = 2.0
+                
             tp_p = round(cp + 4.5 * catr, 2) 
             risk_per_share = cp - sl_p
             entry_metric = f"RS: {int(rs)}"
-            
-            # ⚖️ 改善二 (動態目標)：黃燈降溫，+1R 就食第一注
-            target_r = 1.0 if is_yellow_light else 2.0
             tp1_price = round(cp + (risk_per_share * target_r), 2)
             
             swing_results.append({'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name})
             
-            # 🔔 將 tp1_price 存入系統
             trade_info = {
                 'date': today_str, 'tk': ticker, 'px': round(cp, 2), 
                 'sl': sl_p, 'tp': tp_p, 'initial_sl': sl_p, 'tp1_price': tp1_price,
@@ -755,54 +823,35 @@ for ticker in valid_tickers:
                 'entry_metric': entry_metric, 'curr_metric': entry_metric
             }
 
-        elif not trade_info: 
-            p_px = dict_prev_price.get(ticker)
-            c_op = dict_curr_open.get(ticker)
-            v_ma20 = dict_vol_ma20.get(ticker)
-            b_lower = dict_bb_lower.get(ticker)
+        elif is_gap_up or is_oversold:
+            tag_name = "⚡ 缺口動能" if is_gap_up else "📉 極度超賣"
+            sl_p, tp_p = round(cp * 0.95, 2), round(cp * 1.15, 2)
+            risk_per_share = cp - sl_p
+            entry_metric = f"RSI: {int(rsi_val)}" if is_oversold else f"RS: {int(rs)}"
+            tp1_price = round(cp + (risk_per_share * 1.0), 2)
             
-            h_val = dict_curr_high.get(ticker)
-            l_val = dict_curr_low.get(ticker)
+            short_term_results.append({'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name})
             
-            gap_magnitude = (c_op - p_px) / p_px
-            closing_strength = (cp - l_val) / (h_val - l_val) if h_val != l_val else 0
-            
-            is_gap_up = (
-                (gap_magnitude >= 0.03) and 
-                (c_vol > v_ma20 * 2) and 
-                (cp > c_op) and 
-                (closing_strength >= 0.6)
-            )
-            
-            is_oversold = (rsi_val < 28) and (cp < b_lower)
-            
-            if is_gap_up or is_oversold:
-                tag_name = "⚡ 缺口動能" if is_gap_up else "📉 極度超賣"
-                sl_p, tp_p = round(cp * 0.95, 2), round(cp * 1.15, 2)
-                risk_per_share = cp - sl_p
-                entry_metric = f"RSI: {int(rsi_val)}" if is_oversold else f"RS: {int(rs)}"
+            trade_info = {
+                'date': today_str, 'tk': ticker, 'px': round(cp, 2), 
+                'sl': sl_p, 'tp': tp_p, 'initial_sl': sl_p, 'tp1_price': tp1_price,
+                'last_px': round(cp, 2), 'status': 'OPEN', 'tag': tag_name, 
+                'entry_metric': entry_metric, 'curr_metric': entry_metric
+            }
                 
-                # ⚡ 改善一 (降目標)：短線游擊太難中，一律降至 +1R (5%) 食第一注
-                tp1_price = round(cp + (risk_per_share * 1.0), 2)
-                
-                short_term_results.append({'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name})
-                trade_info = {
-                    'date': today_str, 'tk': ticker, 'px': round(cp, 2), 
-                    'sl': sl_p, 'tp': tp_p, 'initial_sl': sl_p, 'tp1_price': tp1_price,
-                    'last_px': round(cp, 2), 'status': 'OPEN', 'tag': tag_name, 
-                    'entry_metric': entry_metric, 'curr_metric': entry_metric
-                }
-
         if trade_info:
-            # 👇 由 TICKER_MAP 抽返隻股到底屬於邊幾個名單
             ticker_sources = TICKER_MAP.get(ticker, [])
-            # 👇 智能獲取板塊與市值
             s_info = get_stock_info(ticker) 
-            # 👇 寫入 trade_info，等 Dashboard 讀取
+            
             trade_info['sources'] = ticker_sources
             trade_info['sector'] = s_info['sector']
             trade_info['mcap'] = s_info['mcap']
-            # 呼叫 Discord 時傳入專屬的 tp1_price
+            # 👇 寫入高階量化標籤供 Dashboard 渲染
+            trade_info['features'] = {
+                'mss': is_mss, 'smc': is_institutional_ob,
+                'amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
+            }
+            
             send_discord_alert(ticker, tag_name, round(cp, 2), sl_p, tp_p, True, ticker_sources, tp1_price=tp1_price)
             if not any(t.get('tk') == ticker and t.get('status') == 'OPEN' for t in trade_history):
                  trade_history.append(trade_info)
@@ -812,24 +861,24 @@ for ticker in valid_tickers:
                 "sl_price": sl_p, "tp_price": tp_p, "risk_per_share": risk_per_share
             })
 
-    except Exception as e: 
+    except Exception as e:
         pass
 
 swing_results.sort(key=lambda x: x['rs'], reverse=True)
 short_term_results.sort(key=lambda x: x['rs'], reverse=True)
- 
+
 # 保留 20000 條紀錄以確保歷史倉位對帳準確
 with open(HISTORY_FILE, "w", encoding="utf-8") as f: json.dump(trade_history[-20000:], f, indent=4)
 
 # =============================================================================
-# MODULE 6 — 總結算與 Discord 報告
+# MODULE 6 — 總結算與 Discord 報告 (UAT 詳盡數據統一版)
 # =============================================================================
 print("⏳ [6/7] 正在結算戰績並發送 Discord 報告...")
 
 def calculate_stats(history):
-    closed = [t for t in history if '✅' in t['status'] or '❌' in t['status']]
+    closed = [t for t in history if '✅' in t.get('status', '') or '❌' in t.get('status', '')]
     if not closed: return 0, 0, 0
-    wins = [t for t in closed if '✅' in t['status']]
+    wins = [t for t in closed if '✅' in t.get('status', '')]
     return len(closed), len(wins), round(len(wins)/len(closed)*100, 1)
 
 total_closed, wins, win_rate = calculate_stats(trade_history)
@@ -851,7 +900,7 @@ if DISCORD_SUMMARY_WEBHOOK:
     new_count = len(new_trades_today)
     closed_count = len(closed_this_run) if 'closed_this_run' in locals() else 0
 
-    # 2. 目前持倉浮盈與總數量 (🛡️ 兼容分注平倉的精準會計版)
+    # 2. 目前持倉浮盈與總數量 (🛡️ 75/25 分注平倉精準會計版)
     open_trades = [t for t in trade_history if t.get('status') == 'OPEN']
     current_open_count = len(open_trades)
     
@@ -861,9 +910,9 @@ if DISCORD_SUMMARY_WEBHOOK:
         last_px = t['last_px']
         
         if t.get('partial_tp_hit', False):
-            # 50% 已經鎖定在 TP1 (+2R)，50% 隨現價浮動
+            # 75% 已經鎖定在 TP1，25% 隨現價浮動
             initial_risk = buy_px - t.get('initial_sl', buy_px)
-            tp1_price = buy_px + (initial_risk * 2)
+            tp1_price = t.get('tp1_price', buy_px + (initial_risk * 2))
             
             pnl_closed_half = (7500 / buy_px) * (tp1_price - buy_px)   # 已鎖定利潤
             pnl_floating_half = (2500 / buy_px) * (last_px - buy_px) # 剩餘浮動盈虧
@@ -874,9 +923,12 @@ if DISCORD_SUMMARY_WEBHOOK:
             
     floating_str = f"+${floating_pnl:.2f}" if floating_pnl >= 0 else f"-${abs(floating_pnl):.2f}"
 
+    # 💡 [修復 Pylance 報錯] 定義 Discord Embed 顏色 (綠色 65280 / 紅色 16711680)
+    final_color = 65280 if floating_pnl >= 0 else 16711680
+
     # 3. 細分策略 P&L 結算 (歷史總計 - 強制清洗並排序)
     strategy_stats = {}
-    for t in [x for x in trade_history if '✅' in x['status'] or '❌' in x['status']]:
+    for t in [x for x in trade_history if '✅' in x.get('status', '') or '❌' in x.get('status', '')]:
         raw_tag = t.get('tag', '未分類')
         
         # 🧹 清洗標籤：統一合併分注與全平倉的數據
@@ -888,7 +940,7 @@ if DISCORD_SUMMARY_WEBHOOK:
         trade_pnl = (10000 / t['px']) * (t['last_px'] - t['px'])
         strategy_stats[clean_tag]['total'] += 1
         strategy_stats[clean_tag]['pnl'] += trade_pnl
-        if '✅' in t['status']:
+        if '✅' in t.get('status', ''):
             strategy_stats[clean_tag]['wins'] += 1
 
     breakdown_lines = []
@@ -901,15 +953,15 @@ if DISCORD_SUMMARY_WEBHOOK:
         pnl_s = f"+${st['pnl']:.0f}" if st['pnl'] >= 0 else f"-${abs(st['pnl']):.0f}"
         breakdown_lines.append(f"**{tag}**: {w_rate}% 勝率 | P&L: {pnl_s} ({st['total']}單)")
         
-    breakdown_text = "\n".join(breakdown_lines) if breakdown_lines else "尚無足夠結案數據。"    
+    breakdown_text = "\n".join(breakdown_lines) if breakdown_lines else "尚無足夠結案數據。"
+    
     # ==========================================
-    # 👇 搬上嚟：多維度分組對帳邏輯 (Market x Strategy)
+    # 👇 多維度分組對帳邏輯 (Market x Strategy)
     # ==========================================
     group_stats = {'US': {}, 'JP': {}}
 
     def ensure_strat(mkt, strat):
         if strat not in group_stats[mkt]:
-            # prev: 原有持倉, new: 今日新開, closed: 今日結案, final: 最終持倉
             group_stats[mkt][strat] = {'prev': 0, 'new': 0, 'closed': 0, 'final': 0}
 
     # 1. 統計今日新開 (New)
@@ -938,7 +990,7 @@ if DISCORD_SUMMARY_WEBHOOK:
         for strat, s in group_stats[mkt].items():
             s['prev'] = s['final'] - s['new'] + s['closed']
 
-    # 5. 生成 Discord 友善排版 (放棄大表格，改用分組與 Inline Code 對齊)
+    # 5. 生成 Discord 友善排版
     summary_lines = ["\n**【📊 策略持倉對帳表】**"]
     
     for mkt in ['US', 'JP']:
@@ -947,13 +999,9 @@ if DISCORD_SUMMARY_WEBHOOK:
         
         for strat, s in group_stats[mkt].items():
             if s['prev'] == 0 and s['new'] == 0 and s['closed'] == 0 and s['final'] == 0: continue
-            
-            # 將中文字/Emoji 與數字拆開，利用 Inline Code (` `) 確保數字絕對垂直對齊
-            # 確保 "+" 同 "-" 號後面嘅數字位數一致
             line = f"{strat} ➔ 原有: `{s['prev']:3}` | 新開: `+{s['new']:<2}` | 結案: `-{s['closed']:<2}` ＝ 總持倉: `{s['final']:3}`"
             mkt_lines.append(line)
             
-        # 如果該市場有數據，先將市場標題同數據加入總結
         if mkt_lines:
             summary_lines.append(f"\n{mkt_name}")
             summary_lines.extend(mkt_lines)
@@ -964,14 +1012,56 @@ if DISCORD_SUMMARY_WEBHOOK:
     us_scan_count = len(us_tickers)
     jp_scan_count = len(jp_tickers)
 
-    if us_macro_color == 16711680 or jp_macro_color == 16711680: final_color = 16711680
-    elif us_macro_color == 16766720 or jp_macro_color == 16766720: final_color = 16766720
-    else: final_color = 65280
+    # =========================================================================
+    # 🌍 四象限 (4-Regime) 大盤狀態判定 (💡 結合 Production 詳盡排版)
+    # =========================================================================
+    # 美股 (SPX vs Total)
+    spx_price = closes['SPY'].iloc[-1] if 'SPY' in closes.columns else 0
+    spx_200ma = sma200_all['SPY'].iloc[-1] if 'SPY' in sma200_all.columns else 0
+    us_50ma_pct = us_matrix.get('index_50ma_pct', 0)
+    us_20ma_pct = us_matrix.get('total_20ma_pct', 0)
 
-    us_macro_str = f"狀態: **{us_macro_status}**\n🔸 盤長(>200MA): **{us_matrix['index_200ma_pct']}%**\n🔸 盤中(>50MA): **{us_matrix['index_50ma_pct']}%**\n🔸 總中(>50MA): **{us_matrix['total_50ma_pct']}%**\n🔸 超賣(>20MA): **{us_matrix['total_20ma_pct']}%**\n🛑 派發: **{us_dist} 日** | 掃描: {us_scan_count}"
-    jp_macro_str = f"狀態: **{jp_macro_status}**\n🔸 盤長(>200MA): **{jp_matrix['index_200ma_pct']}%**\n🔸 盤中(>50MA): **{jp_matrix['index_50ma_pct']}%**\n🔸 總中(>50MA): **{jp_matrix['total_50ma_pct']}%**\n🔸 超賣(>20MA): **{jp_matrix['total_20ma_pct']}%**\n🛑 派發: **{jp_dist} 日** | 掃描: {jp_scan_count}"
+    if spx_price > spx_200ma:
+        if us_50ma_pct > 60:
+            us_regime = "🟢 **全面牛市 (Bull)**"
+            us_action = "正常建倉 (100% Risk)"
+        else:
+            us_regime = "🟡 **震盪微牛 (Mild Bull)**"
+            us_action = "防禦建倉 (收緊止損, 提早止盈)"
+    else:
+        if us_20ma_pct > 20:
+            us_regime = "🟠 **防禦微熊 (Mild Bear)**"
+            us_action = "僅限超賣撈底"
+        else:
+            us_regime = "🔴 **凜冬熊市 (Bear)**"
+            us_action = "暫停突破建倉"
 
-    # 7. 發送 Payload (將 group_summary_text 放入 description)
+    # 日股 (N225 vs Total)
+    n225_price = closes['^N225'].iloc[-1] if '^N225' in closes.columns else 0
+    n225_200ma = sma200_all['^N225'].iloc[-1] if '^N225' in sma200_all.columns else 0
+    jp_50ma_pct = jp_matrix.get('index_50ma_pct', 0)
+    jp_20ma_pct = jp_matrix.get('total_20ma_pct', 0)
+
+    if n225_price > n225_200ma:
+        if jp_50ma_pct > 60:
+            jp_regime = "🟢 **全面牛市 (Bull)**"
+            jp_action = "正常建倉 (100% Risk)"
+        else:
+            jp_regime = "🟡 **震盪微牛 (Mild Bull)**"
+            jp_action = "防禦建倉 (收緊止損, 提早止盈)"
+    else:
+        if jp_20ma_pct > 20:
+            jp_regime = "🟠 **防禦微熊 (Mild Bear)**"
+            jp_action = "僅限超賣撈底"
+        else:
+            jp_regime = "🔴 **凜冬熊市 (Bear)**"
+            jp_action = "暫停突破建倉"
+
+    # 💡 保留 UAT/Production 統一的詳細矩陣數據
+    us_macro_str = f"狀態: {us_regime}\n🔸 盤長(>200MA): **{us_matrix['index_200ma_pct']}%**\n🔸 盤中(>50MA): **{us_matrix['index_50ma_pct']}%**\n🔸 總中(>50MA): **{us_matrix['total_50ma_pct']}%**\n🔸 超賣(>20MA): **{us_matrix['total_20ma_pct']}%**\n🛑 派發: **{us_dist} 日** | 掃描: {us_scan_count}"
+    jp_macro_str = f"狀態: {jp_regime}\n🔸 盤長(>200MA): **{jp_matrix['index_200ma_pct']}%**\n🔸 盤中(>50MA): **{jp_matrix['index_50ma_pct']}%**\n🔸 總中(>50MA): **{jp_matrix['total_50ma_pct']}%**\n🔸 超賣(>20MA): **{jp_matrix['total_20ma_pct']}%**\n🛑 派發: **{jp_dist} 日** | 掃描: {jp_scan_count}"
+
+    # 7. 發送 Payload (保留 UAT 專屬時光機 Footer)
     payload = {
         "embeds": [{
             "title": f"📊 系統戰績與 3D 矩陣雷達 ({today_str})", 
@@ -995,8 +1085,11 @@ if DISCORD_SUMMARY_WEBHOOK:
         }]
     }
     
-    try: requests.post(DISCORD_SUMMARY_WEBHOOK, json=payload)
-    except: pass
+    try: 
+        requests.post(DISCORD_SUMMARY_WEBHOOK, json=payload)
+    except Exception as e: 
+        pass
+
 # =============================================================================
 # MODULE 7 — 生成 UAT 前端 HTML (雙分頁系統：Dashboard + Journal)
 # =============================================================================
@@ -1879,14 +1972,30 @@ html = f"""<!DOCTYPE html>
                 let pnlPct = ((last_px - buy_px) / buy_px * 100).toFixed(2);
                 const pColor = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
                 
-                // 動態生成 Source 標籤
+                // 1. 動態生成 Source 標籤
                 let sourceBadges = (t.sources || []).map(s => `<span class="text-[8px] bg-blue-500/20 text-blue-300 px-1 rounded ml-1 border border-blue-500/30">${{s}}</span>`).join('');
+                
+                // 2. 👇 動態生成高階量化標籤 (Smart Badges)
+                let featureBadges = '';
+                if (t.features) {{
+                    if (t.features.mss) featureBadges += `<span class="text-[8px] bg-purple-500/20 text-purple-300 px-1 rounded ml-1 border border-purple-500/30" title="Market Structure Shift">🛡️ MSS</span>`;
+                    if (t.features.smc) featureBadges += `<span class="text-[8px] bg-sky-500/20 text-sky-300 px-1 rounded ml-1 border border-sky-500/30" title="Smart Money Order Block">🐋 SMC</span>`;
+                    if (t.features.amd) featureBadges += `<span class="text-[8px] bg-orange-500/20 text-orange-300 px-1 rounded ml-1 border border-orange-500/30" title="Accumulation/Manipulation">🔄 AMD</span>`;
+                    if (t.features.ml_rsi) featureBadges += `<span class="text-[8px] bg-pink-500/20 text-pink-300 px-1 rounded ml-1 border border-pink-500/30">🧠 ML-RSI: ${{t.features.ml_rsi}}</span>`;
+                }}
 
                 return `
                 <tr class="border-b border-slate-700/50 hover:bg-slate-800 transition">
                     <td class="p-2">${{t.date}}</td>
                     <td class="p-2 font-bold text-white">${{t.tk}}</td>
-                    <td class="p-2 flex flex-wrap items-center gap-1 mt-1"><span class="text-[9px] bg-slate-700 px-1 rounded">${{t.tag || 'N/A'}}</span>${{sourceBadges}}</td>
+                    
+                    <!-- 👇 將 featureBadges 加埋入去 -->
+                    <td class="p-2 flex flex-wrap items-center gap-1 mt-1">
+                        <span class="text-[9px] bg-slate-700 px-1 rounded">${{t.tag || 'N/A'}}</span>
+                        ${{sourceBadges}}
+                        ${{featureBadges}}
+                    </td>
+                    
                     <td class="p-2 text-[10px] text-slate-400 truncate max-w-[100px]">${{t.sector || 'N/A'}}</td>
                     <td class="p-2 text-[10px] text-slate-400 font-mono text-right">${{formatMcap(t.mcap)}}</td>
                     <td class="p-2 text-center">
