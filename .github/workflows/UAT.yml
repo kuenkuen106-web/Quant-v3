@@ -1,0 +1,78 @@
+name: v2 UAT Backtest Loop
+on:
+  workflow_dispatch:
+    inputs:
+      start_day:
+        description: '開始天數 (例如 600)'
+        required: true
+        default: '600'
+      end_day:
+        description: '結束天數 (例如 0)'
+        required: true
+        default: '0'
+
+concurrency:
+  group: git-push-group
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  run-strategy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 讀取代碼 (Checkout)
+        uses: actions/checkout@v4 
+
+      - name: 🐍 設定 Python 環境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 🌟 關鍵改裝：加入 Cache 機制，以後不用每次重新下載 200MB+ 數據
+      - name: 💾 Cache market data
+        uses: actions/cache@v3
+        with:
+          path: docs/UAT/market_data_cache.pkl
+          key: ${{ runner.os }}-market-data-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-market-data-
+
+      - name: 📦 安裝依賴工具
+        run: pip install -r requirements.txt
+
+      - name: 🚀 執行量化掃描 (大迴圈模式)
+        env:
+          DISCORD_BACKTEST_WEBHOOK_URL: ${{ secrets.DISCORD_BACKTEST_WEBHOOK_URL }}
+          DISCORD_BACKTEST_SUMMARY_WEBHOOK: ${{ secrets.DISCORD_BACKTEST_SUMMARY_WEBHOOK }}
+          START: ${{ github.event.inputs.start_day }}
+          END: ${{ github.event.inputs.end_day }}
+        run: |
+          for (( i=$START; i>=$END; i-- ))
+          do
+            echo "⏰ 正在啟動時光機：回溯 $i 天..."
+            export UAT_DAYS_AGO=$i
+            python LHK_trading_script_backtest_v2.py
+            sleep 3
+          done
+
+      - name: 💾 更新 Dashboard 網頁檔案
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 1. 強制設定忽略清單，確保 Git 永遠唔會理個 pkl 檔
+          echo "market_data_cache.pkl" > docs/UAT/.gitignore
+          
+          # 2. 將所有 docs 裡面嘅改動加入暫存區
+          git add docs/
+          
+          # 3. 🌟 關鍵修正：先 Commit！將本地變更正式打包，清空工作台
+          git commit -m "Auto-update Dashboard" || echo "No changes to commit"
+          
+          # 4. 🌟 然後先 Pull：因為工作台乾淨咗，Rebase 會完美將遠端嘅改動攝入去你個 Commit 之前
+          git pull origin main --rebase
+          
+          # 5. 提交變更並推送
+          git push

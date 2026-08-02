@@ -1,0 +1,9 @@
+yfinance
+pandas
+numpy
+matplotlib
+beautifulsoup4
+html5lib
+lxml
+requests
+fake-useragent

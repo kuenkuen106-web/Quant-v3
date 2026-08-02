@@ -1,0 +1,62 @@
+name: v2 Production
+
+on:
+  schedule:
+    # 🇯🇵 日股收市後結算
+    - cron: '17 8 * * 1-5'
+    # 🇺🇸 美股收市後結算
+    - cron: '43 22 * * 1-5'
+  workflow_dispatch: 
+
+permissions:
+  contents: write
+
+jobs:
+  run-strategy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: 📥 讀取代碼 (Checkout)
+        uses: actions/checkout@v4 
+
+      - name: 🐍 設定 Python 環境
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      # 🌟 加入 Cache 機制：防止因為讀取數據太慢而導致 Action 超時
+      - name: 💾 Cache market data
+        uses: actions/cache@v3
+        with:
+          path: docs/UAT/market_data_cache.pkl
+          key: ${{ runner.os }}-prod-market-data-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-prod-market-data-
+
+      - name: 📦 安裝依賴工具
+        run: pip install -r requirements.txt
+
+      - name: 🚀 執行量化掃描與發送 Discord
+        env:
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          DISCORD_SUMMARY_WEBHOOK: ${{ secrets.DISCORD_SUMMARY_WEBHOOK }}
+        run: python LHK_trading_script_v2.py
+
+      - name: 💾 更新 Dashboard 網頁檔案
+        run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
+          
+          # 1. 強制設定忽略清單，確保 Git 永遠唔會理個 pkl 檔
+          echo "market_data_cache.pkl" > docs/UAT/.gitignore
+          
+          # 2. 將所有 docs 裡面嘅改動加入暫存區
+          git add docs/
+          
+          # 3. 🌟 關鍵修正：先 Commit (打包存檔)，清空工作台
+          git commit -m "Auto-update Dashboard - Production" || echo "No changes to commit"
+          
+          # 4. 🌟 然後先 Pull (拉取代碼)，工作台乾淨咗，Rebase 就能完美融合
+          git pull origin main --rebase
+          
+          # 5. 提交變更並推送
+          git push
