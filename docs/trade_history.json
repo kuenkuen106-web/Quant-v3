@@ -1,0 +1,102 @@
+[
+    {
+        "date": "2026-08-03",
+        "tk": "2121.T",
+        "px": 3400.0,
+        "sl": 3230.0,
+        "tp": 3910.0,
+        "initial_sl": 3230.0,
+        "tp1_price": 3570.0,
+        "last_px": 3400.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 77",
+        "curr_metric": "RS: 77",
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 74.4
+        }
+    },
+    {
+        "date": "2026-08-03",
+        "tk": "5332.T",
+        "px": 6171.0,
+        "sl": 5862.45,
+        "tp": 7096.65,
+        "initial_sl": 5862.45,
+        "tp1_price": 6479.55,
+        "last_px": 6171.0,
+        "status": "OPEN",
+        "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
+        "entry_metric": "RSI: 17",
+        "curr_metric": "RSI: 17",
+        "sources": [
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "features": {
+            "mss": false,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 17.6
+        }
+    },
+    {
+        "date": "2026-08-03",
+        "tk": "6810.T",
+        "px": 2570.0,
+        "sl": 2441.5,
+        "tp": 2955.5,
+        "initial_sl": 2441.5,
+        "tp1_price": 2698.5,
+        "last_px": 2570.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 78",
+        "curr_metric": "RS: 78",
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 79.7
+        }
+    },
+    {
+        "date": "2026-08-03",
+        "tk": "6952.T",
+        "px": 2164.5,
+        "sl": 2056.28,
+        "tp": 2489.17,
+        "initial_sl": 2056.28,
+        "tp1_price": 2272.72,
+        "last_px": 2164.5,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 93",
+        "curr_metric": "RS: 93",
+        "sources": [
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 75.8
+        }
+    }
+]

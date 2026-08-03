@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="text/javascript" src="https://s3.tradingview.com/tv.js"></script>
+    <title>V1 QUANT (2026-08-03)</title>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>  
+    <style>
+        .apexcharts-tooltip {
+            z-index: 99999 !important; 
+        }
+        th.cursor-pointer { transition: color 0.2s; }
+        th.cursor-pointer:hover { color: #f8fafc; }
+    </style>
+</head>
+<body class="bg-[#020617] text-slate-300 p-4 font-sans h-screen flex flex-col overflow-hidden">
+    
+    <header class="bg-slate-900 border border-slate-800 rounded-xl p-3 shrink-0 mb-3 shadow-lg flex flex-col gap-3 relative overflow-hidden">
+        
+        <div class="flex justify-between items-center z-10">
+            <div class="flex items-center gap-4">
+                <div>
+                    <h1 class="text-2xl font-black text-white italic tracking-tighter">V1 PRO <span class="text-indigo-500">QUANT</span></h1>
+                    <div class="mt-1 inline-block px-3 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full text-emerald-400 text-[10px] font-black tracking-widest shadow-[0_0_15px_rgba(16,185,129,0.2)]">
+                        🟢 實時生產環境 (Production): 2026-08-03
+                    </div>
+                </div>
+                <div class="flex gap-2 ml-6 bg-slate-950 p-1 rounded-lg border border-slate-800">
+                    <button id="tabBtn-dashboard" onclick="switchTab('dashboard')" class="bg-indigo-600 text-white px-4 py-1.5 rounded-md font-bold text-sm shadow-md transition">📊 儀表板 (Dashboard)</button>
+                    <button id="tabBtn-journal" onclick="switchTab('journal')" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-1.5 rounded-md font-bold text-sm transition">📜 交易日誌 (Journal)</button>
+                    <button id="tabBtn-charts" onclick="switchTab('charts')" class="text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-1.5 rounded-md font-bold text-sm transition">📈 宏觀走勢 (Charts)</button>
+                </div>
+            </div>
+            <div class="text-xs font-black text-slate-500 bg-black/50 px-3 py-1 rounded-lg border border-slate-800">🌐 Dual-Market Macro Radar</div>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4 z-10">
+            <div class="flex items-center gap-2 bg-slate-800/30 p-2 rounded-lg border border-slate-800">
+                <div class="w-16 text-center text-xs font-black text-slate-400 border-r border-slate-700">美股<br><span class="text-[9px] text-emerald-500 bg-emerald-500/10 border-emerald-500/20">牛市格局</span></div>
+                <div class="flex-1 grid grid-cols-5 gap-1 px-2 text-center items-center">
+                    <div class="flex flex-col"><span class="text-[8px] text-slate-500">大盤>200MA</span><span class="text-[11px] font-bold text-emerald-400">68.3%</span></div>
+                    <div class="flex flex-col"><span class="text-[8px] text-slate-500">大盤>50MA</span><span class="text-[11px] font-bold text-emerald-400">61.5%</span></div>
+                    <div class="flex flex-col border-l border-slate-700/50 pl-1"><span class="text-[8px] text-slate-500">全市>50MA</span><span class="text-[11px] font-bold text-emerald-400">61.7%</span></div>
+                    <div class="flex flex-col"><span class="text-[8px] text-slate-500">超賣>20MA</span><span class="text-[11px] font-bold text-slate-300">51.4%</span></div>
+                    <div class="flex flex-col border-l border-slate-700/50 pl-1"><span class="text-[8px] text-slate-500">派發日</span><span class="text-[11px] font-bold text-red-400">6d</span></div>
+                </div>
+            </div>
+            
+            <div class="flex items-center gap-2 bg-slate-800/30 p-2 rounded-lg border border-slate-800">
+                <div class="w-16 text-center text-xs font-black text-slate-400 border-r border-slate-700">日股<br><span class="text-[9px] text-emerald-500 bg-emerald-500/10 border-emerald-500/20">牛市格局</span></div>
+                <div class="flex-1 grid grid-cols-5 gap-1 px-2 text-center items-center">
+                    <div class="flex flex-col"><span class="text-[8px] text-slate-500">大盤>200MA</span><span class="text-[11px] font-bold text-emerald-400">62.8%</span></div>
+                    <div class="flex flex-col"><span class="text-[8px] text-slate-500">大盤>50MA</span><span class="text-[11px] font-bold text-emerald-400">62.0%</span></div>
+                    <div class="flex flex-col border-l border-slate-700/50 pl-1"><span class="text-[8px] text-slate-500">全市>50MA</span><span class="text-[11px] font-bold text-emerald-400">62.0%</span></div>
+                    <div class="flex flex-col"><span class="text-[8px] text-slate-500">超賣>20MA</span><span class="text-[11px] font-bold text-slate-300">44.2%</span></div>
+                    <div class="flex flex-col border-l border-slate-700/50 pl-1"><span class="text-[8px] text-slate-500">派發日</span><span class="text-[11px] font-bold text-red-400">7d</span></div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main id="tab-dashboard" class="flex-1 flex gap-4 overflow-hidden z-10">
+        <div class="w-1/3 flex flex-col gap-4 overflow-hidden">
+            <div class="bg-slate-900 p-2 rounded-xl border border-slate-800 h-[200px] shrink-0 relative flex items-center justify-center shadow-lg">
+                <div class="absolute top-2 left-3 z-10 flex gap-2 items-center">
+                    <span class="text-xs font-bold text-slate-400">SPX Anatomy:</span>
+                    <span class="text-[9px] bg-red-500/20 text-red-400 px-1 rounded border border-red-500/30">200MA</span>
+                    <span class="text-[9px] text-emerald-400 ml-2">▲ FTD</span>
+                </div>
+                <img src="charts/SPY_Trend.png" class="max-h-full max-w-full object-contain">
+            </div>
+
+            <div class="bg-slate-900 rounded-xl border border-slate-800 flex-1 flex flex-col overflow-hidden shadow-lg">
+                <div class="p-3 border-b border-slate-800 font-black text-indigo-400 flex justify-between items-center shrink-0">
+                    <span>🎯 實時推介信號 (點擊查看)</span>
+                </div>
+                <div class="overflow-y-auto flex-1 p-2 space-y-2" id="signal-list">
+                    <div class="text-[10px] font-bold text-slate-500 uppercase ml-1 mt-2">🏆 波段策略 (Swing)</div>
+                    <p class="text-slate-600 italic text-xs px-2">無訊號</p>
+                    
+                    <div class="text-[10px] font-bold text-slate-500 uppercase ml-1 mt-4">⚡ 短線游擊 (Short Term)</div>
+                    
+                    <div class="bg-slate-800/50 hover:bg-amber-900/30 cursor-pointer border border-slate-700/50 hover:border-amber-500/50 rounded-lg p-2 transition" onclick="loadContent('6952.T')">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-white text-sm">6952.T</span>
+                            <span class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">⚡ 缺口動能</span>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                            <span>RS: 94.0</span>
+                            <span class="font-bold text-white">現價: ¥2164.5</span>
+                        </div>
+                        <div class="flex justify-between text-[9px] mt-1.5 pt-1.5 border-t border-slate-700/50">
+                            <span class="text-emerald-400 font-mono">🎯 TP: ¥2489.17 (+15.0%)</span>
+                            <span class="text-red-400 font-mono">🛑 SL: ¥2056.28 (-5.0%)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-800/50 hover:bg-amber-900/30 cursor-pointer border border-slate-700/50 hover:border-amber-500/50 rounded-lg p-2 transition" onclick="loadContent('5332.T')">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-white text-sm">5332.T</span>
+                            <span class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">📉 極度超賣</span>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                            <span>RS: 84.0</span>
+                            <span class="font-bold text-white">現價: ¥6171.0</span>
+                        </div>
+                        <div class="flex justify-between text-[9px] mt-1.5 pt-1.5 border-t border-slate-700/50">
+                            <span class="text-emerald-400 font-mono">🎯 TP: ¥7096.65 (+15.0%)</span>
+                            <span class="text-red-400 font-mono">🛑 SL: ¥5862.45 (-5.0%)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-800/50 hover:bg-amber-900/30 cursor-pointer border border-slate-700/50 hover:border-amber-500/50 rounded-lg p-2 transition" onclick="loadContent('6810.T')">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-white text-sm">6810.T</span>
+                            <span class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">⚡ 缺口動能</span>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                            <span>RS: 78.0</span>
+                            <span class="font-bold text-white">現價: ¥2570.0</span>
+                        </div>
+                        <div class="flex justify-between text-[9px] mt-1.5 pt-1.5 border-t border-slate-700/50">
+                            <span class="text-emerald-400 font-mono">🎯 TP: ¥2955.5 (+15.0%)</span>
+                            <span class="text-red-400 font-mono">🛑 SL: ¥2441.5 (-5.0%)</span>
+                        </div>
+                    </div>
+                    
+                    <div class="bg-slate-800/50 hover:bg-amber-900/30 cursor-pointer border border-slate-700/50 hover:border-amber-500/50 rounded-lg p-2 transition" onclick="loadContent('2121.T')">
+                        <div class="flex justify-between items-center">
+                            <span class="font-black text-white text-sm">2121.T</span>
+                            <span class="text-[9px] bg-amber-500/20 text-amber-300 px-1.5 py-0.5 rounded">⚡ 缺口動能</span>
+                        </div>
+                        <div class="flex justify-between text-[10px] text-slate-400 mt-1">
+                            <span>RS: 77.0</span>
+                            <span class="font-bold text-white">現價: ¥3400.0</span>
+                        </div>
+                        <div class="flex justify-between text-[9px] mt-1.5 pt-1.5 border-t border-slate-700/50">
+                            <span class="text-emerald-400 font-mono">🎯 TP: ¥3910.0 (+15.0%)</span>
+                            <span class="text-red-400 font-mono">🛑 SL: ¥3230.0 (-5.0%)</span>
+                        </div>
+                    </div>
+                    
+                </div>
+            </div>
+        </div>
+
+        <div class="w-2/3 flex flex-col gap-4 h-full">
+            <div class="bg-slate-900 rounded-xl border border-slate-700 p-4 shrink-0 shadow-lg">
+                <div class="flex justify-between items-center mb-3">
+                    <div class="flex items-center gap-2">
+                        <h3 class="text-sm font-black text-amber-500">🧮 專業部位計算機</h3>
+                        <span id="calc_ticker_name" class="text-xs font-bold text-white bg-slate-700 px-2 py-0.5 rounded">-</span>
+                        <a id="tv_out_link" href="#" target="_blank" class="hidden text-[10px] font-bold bg-blue-600/30 text-blue-400 border border-blue-500/50 hover:bg-blue-600 hover:text-white px-2 py-0.5 rounded transition">🔗 在 TV 開啟</a>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] text-slate-400 font-bold uppercase">總資金 (Account Size):</label>
+                        <input type="number" id="acc_size" value="10000" class="bg-slate-800 border border-slate-600 text-white text-xs px-2 py-1 rounded w-24 text-right focus:outline-none focus:border-amber-500" onchange="updateCalculator()" onkeyup="updateCalculator()">
+                    </div>
+                </div>
+                <div class="grid grid-cols-5 gap-3 text-center">
+                    <div class="bg-slate-800/50 p-2 rounded-lg border border-slate-700">
+                        <div class="text-[9px] text-slate-400 uppercase font-bold">進場現價</div>
+                        <div class="font-black text-white text-lg" id="calc_entry">-</div>
+                    </div>
+                    <div class="bg-red-900/10 p-2 rounded-lg border border-red-900/50">
+                        <div class="text-[9px] text-red-400 uppercase font-bold">嚴格止損 (-2.5 ATR)</div>
+                        <div class="font-black text-red-400 text-lg" id="calc_sl">-</div>
+                    </div>
+                    <div class="bg-emerald-900/10 p-2 rounded-lg border border-emerald-900/50">
+                        <div class="text-[9px] text-emerald-400 uppercase font-bold">目標止盈 (+4.5 ATR)</div>
+                        <div class="font-black text-emerald-400 text-lg" id="calc_tp">-</div>
+                    </div>
+                    <div class="bg-amber-500/10 p-2 rounded-lg border border-amber-500/30 relative">
+                        <div class="absolute -top-2 -right-2 bg-amber-500 text-black text-[8px] font-black px-1.5 py-0.5 rounded-full">1% Risk</div>
+                        <div class="text-[9px] text-amber-500 uppercase font-bold">建議買入股數</div>
+                        <div class="font-black text-amber-400 text-lg" id="calc_shares">-</div>
+                    </div>
+                    <div class="bg-slate-800/50 p-2 rounded-lg border border-slate-700">
+                        <div class="text-[9px] text-slate-400 uppercase font-bold">總持倉成本 (佔比)</div>
+                        <div class="font-black text-blue-300 text-lg" id="calc_cost">-</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-slate-900 p-1 rounded-xl border border-slate-800 flex-1 relative shadow-lg" id="tv_chart_container">
+                <div class="absolute inset-0 flex items-center justify-center text-slate-600 text-sm italic font-bold z-0 pointer-events-none">
+                    請點擊左側信號以載入圖表
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <main id="tab-charts" class="hidden flex-1 overflow-y-auto bg-slate-900 rounded-xl border border-slate-800 p-6 z-10 flex flex-col gap-6 shadow-lg">
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <h2 class="text-2xl font-black text-white flex items-center gap-2">📈 歷史宏觀與持倉走勢 (最近 60 日)</h2>
+            <div class="text-xs text-slate-500">底色反映當日大盤狀態 (紅=熊市防禦 / 黃=背馳警告 / 綠=牛市通行)</div>
+        </div>
+        <div class="grid grid-cols-1 gap-6">
+            <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                <h3 class="font-black text-slate-300 mb-2">🇺🇸 美股 (SPX)</h3>
+                <div id="chart-us" class="h-[350px]"></div>
+            </div>
+            <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                <h3 class="font-black text-slate-300 mb-2">🇯🇵 日股 (N225)</h3>
+                <div id="chart-jp" class="h-[350px]"></div>
+            </div>
+            <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-black text-slate-300">🧩 策略持倉分佈 (Strategy Exposure)</h3>
+                    <div class="text-[10px] text-slate-500">反映不同市況下的資金流向</div>
+                </div>
+                <div id="chart-exposure" class="h-[300px]"></div>
+            </div>
+            <div class="bg-slate-800/30 p-4 rounded-xl border border-slate-700">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="font-black text-slate-300">💰 策略累積利潤走勢 (Cumulative P&L)</h3>
+                    <div class="text-[10px] text-slate-500">各策略歷史淨利增長曲線</div>
+                </div>
+                <div id="chart-cumulative-pnl" class="h-[350px]"></div>
+            </div>
+        </div>
+    </main>
+
+    <main id="tab-journal" class="hidden flex-1 overflow-y-auto bg-slate-900 rounded-xl border border-slate-800 p-6 z-10 flex flex-col gap-6 shadow-lg">
+        
+        <div class="flex justify-between items-center border-b border-slate-800 pb-2">
+            <h2 class="text-2xl font-black text-white flex items-center gap-2">📜 歷史交易結算與日誌</h2>
+            <div class="text-xs text-slate-500">每單固定以 $10,000 基準結算盈虧</div>
+        </div>
+
+        <div class="grid grid-cols-4 gap-4" id="journal-stats"></div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-3 flex gap-4 items-end shadow-lg">
+            <div>
+                <label class="text-[10px] text-slate-400 font-bold uppercase mb-1 block">🔍 策略篩選</label>
+                <select id="filter-strat" onchange="renderJournal()" class="bg-slate-900 border border-slate-600 text-xs text-white px-3 py-1.5 rounded outline-none focus:border-fuchsia-500">
+                    <option value="ALL">全部策略</option>
+                    <option value="VCP">🏆 VCP 突破</option>
+                    <option value="BB">💥 BB 擠壓</option>
+                    <option value="缺口">⚡ 缺口動能</option>
+                    <option value="超賣">📉 極度超賣</option>
+                </select>
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-400 font-bold uppercase mb-1 block">📁 股票來源篩選</label>
+                <select id="filter-source" onchange="renderJournal()" class="bg-slate-900 border border-slate-600 text-xs text-white px-3 py-1.5 rounded outline-none focus:border-fuchsia-500">
+                    <option value="ALL">全部來源</option>
+                    </select>
+            </div>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-4">
+            <h3 class="font-black text-fuchsia-400 mb-3 flex items-center gap-2">🎯 按策略分析 (Strategy Performance)</h3>
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4" id="strategy-stats-container">
+                </div>
+        </div>
+
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-4">
+            <h3 class="font-black text-indigo-400 mb-3 flex items-center gap-2">📊 進場指標與勝率分析</h3>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="bg-slate-900/50 rounded-lg border border-slate-700/50 overflow-hidden">
+                    <div class="bg-slate-800 px-3 py-1 text-xs font-bold text-slate-300 border-b border-slate-700">📈 動能策略 (按 RS 分佈)</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left whitespace-nowrap">
+                            <thead class="text-slate-500 uppercase border-b border-slate-700">
+                                <tr><th class="p-2">RS 區間</th><th class="p-2 text-center">單數</th><th class="p-2 text-center">勝率</th><th class="p-2 text-right">實現 P&L</th></tr>
+                            </thead>
+                            <tbody id="metric-rs-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+                <div class="bg-slate-900/50 rounded-lg border border-slate-700/50 overflow-hidden">
+                    <div class="bg-slate-800 px-3 py-1 text-xs font-bold text-slate-300 border-b border-slate-700">📉 撈底策略 (按 RSI 分佈)</div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs text-left whitespace-nowrap">
+                            <thead class="text-slate-500 uppercase border-b border-slate-700">
+                                <tr><th class="p-2">RSI 區間</th><th class="p-2 text-center">單數</th><th class="p-2 text-center">勝率</th><th class="p-2 text-right">實現 P&L</th></tr>
+                            </thead>
+                            <tbody id="metric-rsi-tbody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-4">
+                <h3 class="font-black text-cyan-400 mb-3 flex items-center gap-2">📂 目前持倉 (Open Positions)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left whitespace-nowrap">
+                        <thead class="text-slate-500 uppercase border-b border-slate-700 bg-slate-800/50">
+                            <tr>
+                                <th class="p-2">日期</th><th class="p-2">代號</th><th class="p-2">策略</th>
+                                <th class="p-2 text-center">持倉狀態</th>
+                                <th class="p-2">進場指標</th><th class="p-2">現時指標</th>
+                                <th class="p-2">買入價</th><th class="p-2">止損</th><th class="p-2">止盈</th><th class="p-2">現價</th>
+                                <th class="p-2 text-right">浮動 P&L</th><th class="p-2 text-right">回報 (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journal-open-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-4">
+                <h3 class="font-black text-emerald-400 mb-3 flex items-center gap-2">📁 最近結案紀錄 (Closed Trades)</h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left whitespace-nowrap">
+                        <thead class="text-slate-500 uppercase border-b border-slate-700 bg-slate-800/50">
+                            <tr>
+                                <th class="p-2">買入日期</th><th class="p-2">平倉日期</th><th class="p-2">代號</th>
+                                <th class="p-2">策略</th><th class="p-2">狀態</th>
+                                <th class="p-2">買入價</th><th class="p-2">賣出價</th>
+                                <th class="p-2 text-right">實現 P&L</th><th class="p-2 text-right">回報 (%)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="journal-closed-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const rawData = [{"ticker": "2121.T", "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd", "curr_price": 3400.0, "sl_price": 3230.0, "tp_price": 3910.0, "risk_per_share": 170.0}, {"ticker": "5332.T", "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3", "curr_price": 6171.0, "sl_price": 5862.45, "tp_price": 7096.65, "risk_per_share": 308.5500000000002}, {"ticker": "6810.T", "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd", "curr_price": 2570.0, "sl_price": 2441.5, "tp_price": 2955.5, "risk_per_share": 128.5}, {"ticker": "6952.T", "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd", "curr_price": 2164.5, "sl_price": 2056.28, "tp_price": 2489.17, "risk_per_share": 108.2199999999998}];
+        const tradeHistory = [{"date": "2026-08-03", "tk": "2121.T", "px": 3400.0, "sl": 3230.0, "tp": 3910.0, "initial_sl": 3230.0, "tp1_price": 3570.0, "last_px": 3400.0, "status": "OPEN", "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd", "entry_metric": "RS: 77", "curr_metric": "RS: 77", "sources": ["TOPIX_Small500_\u5c0f\u578b"], "sector": "N/A", "mcap": 0, "features": {"mss": true, "smc": true, "amd": false, "ml_rsi": 74.4}}, {"date": "2026-08-03", "tk": "5332.T", "px": 6171.0, "sl": 5862.45, "tp": 7096.65, "initial_sl": 5862.45, "tp1_price": 6479.55, "last_px": 6171.0, "status": "OPEN", "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3", "entry_metric": "RSI: 17", "curr_metric": "RSI: 17", "sources": ["TOPIX_Mid400_\u4e2d\u578b"], "sector": "N/A", "mcap": 0, "features": {"mss": false, "smc": false, "amd": false, "ml_rsi": 17.6}}, {"date": "2026-08-03", "tk": "6810.T", "px": 2570.0, "sl": 2441.5, "tp": 2955.5, "initial_sl": 2441.5, "tp1_price": 2698.5, "last_px": 2570.0, "status": "OPEN", "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd", "entry_metric": "RS: 78", "curr_metric": "RS: 78", "sources": ["TOPIX_Small500_\u5c0f\u578b"], "sector": "N/A", "mcap": 0, "features": {"mss": true, "smc": true, "amd": false, "ml_rsi": 79.7}}, {"date": "2026-08-03", "tk": "6952.T", "px": 2164.5, "sl": 2056.28, "tp": 2489.17, "initial_sl": 2056.28, "tp1_price": 2272.72, "last_px": 2164.5, "status": "OPEN", "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd", "entry_metric": "RS: 93", "curr_metric": "RS: 93", "sources": ["TOPIX_Mid400_\u4e2d\u578b"], "sector": "N/A", "mcap": 0, "features": {"mss": true, "smc": true, "amd": true, "ml_rsi": 75.8}}];
+        const chartData = [{"date": "2026-05-12", "us_idx_breadth": 48.1, "us_tot_breadth": 53.9, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 32.7, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-13", "us_idx_breadth": 42.9, "us_tot_breadth": 49.3, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 33.1, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-14", "us_idx_breadth": 43.3, "us_tot_breadth": 51.6, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 33.5, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-15", "us_idx_breadth": 41.2, "us_tot_breadth": 45.7, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 33.9, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-18", "us_idx_breadth": 47.9, "us_tot_breadth": 51.2, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 31.2, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-19", "us_idx_breadth": 43.9, "us_tot_breadth": 47.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 35.9, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-20", "us_idx_breadth": 49.5, "us_tot_breadth": 54.0, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 30.2, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-21", "us_idx_breadth": 50.9, "us_tot_breadth": 54.2, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 31.7, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-22", "us_idx_breadth": 53.7, "us_tot_breadth": 56.9, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 31.6, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-25", "us_idx_breadth": 53.9, "us_tot_breadth": 57.0, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 33.0, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-26", "us_idx_breadth": 52.5, "us_tot_breadth": 58.1, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 32.5, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-27", "us_idx_breadth": 51.7, "us_tot_breadth": 58.0, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 32.4, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-28", "us_idx_breadth": 51.9, "us_tot_breadth": 57.8, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 32.0, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-05-29", "us_idx_breadth": 50.3, "us_tot_breadth": 55.6, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 34.4, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-01", "us_idx_breadth": 47.3, "us_tot_breadth": 51.9, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 30.5, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-02", "us_idx_breadth": 48.1, "us_tot_breadth": 53.6, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#22c55e", "jp_idx_breadth": 0.0, "jp_tot_breadth": 28.8, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-03", "us_idx_breadth": 45.7, "us_tot_breadth": 48.6, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 31.0, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-04", "us_idx_breadth": 51.9, "us_tot_breadth": 55.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 28.3, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-05", "us_idx_breadth": 49.3, "us_tot_breadth": 52.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 30.3, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-08", "us_idx_breadth": 48.5, "us_tot_breadth": 52.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 27.5, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-09", "us_idx_breadth": 54.5, "us_tot_breadth": 57.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 28.7, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-10", "us_idx_breadth": 47.7, "us_tot_breadth": 53.1, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 27.9, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-11", "us_idx_breadth": 52.7, "us_tot_breadth": 57.2, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 27.5, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-12", "us_idx_breadth": 56.9, "us_tot_breadth": 61.4, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 30.0, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-15", "us_idx_breadth": 60.8, "us_tot_breadth": 62.0, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#eab308", "jp_idx_breadth": 0.0, "jp_tot_breadth": 34.1, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-16", "us_idx_breadth": 61.8, "us_tot_breadth": 62.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 32.2, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-17", "us_idx_breadth": 51.5, "us_tot_breadth": 53.9, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 33.6, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-18", "us_idx_breadth": 51.7, "us_tot_breadth": 57.0, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 34.1, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-19", "us_idx_breadth": 51.7, "us_tot_breadth": 56.7, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 33.0, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-22", "us_idx_breadth": 51.5, "us_tot_breadth": 56.0, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 33.2, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-23", "us_idx_breadth": 56.1, "us_tot_breadth": 59.0, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 30.2, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-24", "us_idx_breadth": 59.4, "us_tot_breadth": 62.4, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 29.4, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-25", "us_idx_breadth": 60.6, "us_tot_breadth": 63.8, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 32.6, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-26", "us_idx_breadth": 60.8, "us_tot_breadth": 66.1, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 34.8, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-29", "us_idx_breadth": 61.0, "us_tot_breadth": 64.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 41.6, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-06-30", "us_idx_breadth": 59.8, "us_tot_breadth": 64.3, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 39.1, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-01", "us_idx_breadth": 60.4, "us_tot_breadth": 64.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 37.0, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-02", "us_idx_breadth": 63.6, "us_tot_breadth": 65.3, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 44.6, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-03", "us_idx_breadth": 63.0, "us_tot_breadth": 65.1, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 49.9, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-06", "us_idx_breadth": 64.6, "us_tot_breadth": 66.3, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 54.2, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-07", "us_idx_breadth": 63.2, "us_tot_breadth": 63.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 53.1, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-08", "us_idx_breadth": 60.4, "us_tot_breadth": 59.9, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 48.4, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-09", "us_idx_breadth": 60.4, "us_tot_breadth": 61.9, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 48.1, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-10", "us_idx_breadth": 63.8, "us_tot_breadth": 64.4, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 48.4, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-13", "us_idx_breadth": 63.0, "us_tot_breadth": 63.7, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 45.4, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-14", "us_idx_breadth": 59.4, "us_tot_breadth": 62.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 49.3, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-15", "us_idx_breadth": 58.6, "us_tot_breadth": 63.8, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 52.2, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-16", "us_idx_breadth": 63.8, "us_tot_breadth": 68.3, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 50.0, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-17", "us_idx_breadth": 61.4, "us_tot_breadth": 65.1, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 44.1, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-20", "us_idx_breadth": 58.1, "us_tot_breadth": 61.6, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 44.1, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-21", "us_idx_breadth": 55.7, "us_tot_breadth": 62.0, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 48.2, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-22", "us_idx_breadth": 58.1, "us_tot_breadth": 62.4, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 48.7, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-23", "us_idx_breadth": 55.7, "us_tot_breadth": 58.7, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 49.0, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-24", "us_idx_breadth": 62.0, "us_tot_breadth": 62.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 47.4, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-27", "us_idx_breadth": 65.4, "us_tot_breadth": 65.0, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 52.6, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-28", "us_idx_breadth": 66.8, "us_tot_breadth": 67.5, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 49.0, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-29", "us_idx_breadth": 61.4, "us_tot_breadth": 60.4, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 49.8, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-30", "us_idx_breadth": 60.2, "us_tot_breadth": 59.8, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 48.9, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-07-31", "us_idx_breadth": 58.8, "us_tot_breadth": 58.6, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 46.8, "jp_open_profit": 0, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 0, "strat_oversold": 0, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}, {"date": "2026-08-03", "us_idx_breadth": 58.1, "us_tot_breadth": 58.3, "us_open_profit": 0, "us_open_loss": 0, "us_color": "#ef4444", "jp_idx_breadth": 0.0, "jp_tot_breadth": 43.4, "jp_open_profit": 4, "jp_open_loss": 0, "jp_color": "#ef4444", "strat_vcp": 0, "strat_bb": 0, "strat_gap": 3, "strat_oversold": 1, "pnl_vcp": 0, "pnl_bb": 0, "pnl_gap": 0, "pnl_oversold": 0}]; // 👈 加入呢行
+
+        let chartsRendered = false; // 👈 確保圖表只渲染一次
+        let currentSelectedTicker = null;
+        let tvWidget = null;
+
+        function switchTab(tabId) {
+            ['dashboard', 'journal', 'charts'].forEach(id => {
+            const tabEl = document.getElementById('tab-' + id);
+            const btnEl = document.getElementById('tabBtn-' + id);
+            if (tabEl) tabEl.classList.toggle('hidden', tabId !== id);
+            if (btnEl) btnEl.className = tabId === id 
+                ? 'bg-indigo-600 text-white px-4 py-1.5 rounded-md font-bold text-sm shadow-md transition' 
+                : 'text-slate-400 hover:text-white hover:bg-slate-800 px-4 py-1.5 rounded-md font-bold text-sm transition';
+        });
+
+        if (tabId === 'journal') renderJournal();
+        if (tabId === 'charts' && !chartsRendered) renderCharts();
+        }
+
+        function renderCharts() {
+            const dates = chartData.map(d => d.date);
+            
+            const createChartOptions = (market) => {
+                // 讀取所有數據欄位
+                const idxBreadthData = chartData.map(d => d[market + '_idx_breadth']);
+                const totBreadthData = chartData.map(d => d[market + '_tot_breadth']);
+                const profitData = chartData.map(d => d[market + '_open_profit']);
+                const lossData = chartData.map(d => d[market + '_open_loss']);
+                
+                // 動態生成底色區塊 (Annotations)
+                const annotations = chartData.map((d, i) => ({
+                    x: d.date,
+                    x2: i < chartData.length - 1 ? chartData[i+1].date : d.date,
+                    fillColor: d[market + '_color'],
+                    opacity: 0.15,
+                    strokeDashArray: 0,
+                    borderWidth: 0
+                }));
+
+                return {
+                    series: [
+                        { name: '大盤市寬 (>50MA)', type: 'line', data: idxBreadthData },
+                        { name: '全市市寬 (>50MA)', type: 'line', data: totBreadthData },
+                        // 👇 新增：Profit 與 Loss 數據，並將 P&L 狀態綁定為 Column 類型
+                        { name: '賺錢持倉 (Profit)', type: 'column', data: profitData },
+                        { name: '蝕本持倉 (Loss)', type: 'column', data: lossData }
+                    ],
+                    chart: { 
+                        height: 350, 
+                        type: 'line', 
+                        // 👇 開啟 Stacked (堆疊) 模式！
+                        stacked: true,
+                        toolbar: { show: false }, 
+                        background: 'transparent' 
+                    },
+                    stroke: { 
+                        width: [3, 2, 0, 0], // 前兩條是線，後兩條是柱狀圖的邊框
+                        curve: 'smooth', 
+                        dashArray: [0, 4, 0, 0] // 大盤實線，全市虛線
+                    },
+                    // 👇 定義顏色：[大盤線, 全市虛線, Profit柱, Loss柱]
+                    colors: ['#f59e0b', '#06b6d4', '#22c55e', '#ef4444'], // 橙色, 湖水綠, 綠色, 紅色
+                    annotations: { 
+                        position: 'back', 
+                        xaxis: annotations 
+                    },
+                    xaxis: { categories: dates, labels: { style: { colors: '#94a3b8' } }, tickAmount: 10 },
+                    yaxis: [
+                        { 
+                            seriesName: '大盤市寬 (>50MA)', 
+                            title: { text: '市寬 (%)', style: { color: '#94a3b8' } }, 
+                            labels: { style: { colors: '#94a3b8' } }, 
+                            min: 0, max: 100 
+                        },
+                        { seriesName: '大盤市寬 (>50MA)', show: false }, // 共用市寬Y軸
+                        { 
+                            opposite: true, 
+                            seriesName: '賺錢持倉 (Profit)', 
+                            title: { text: '持倉數量 (隻)', style: { color: '#8b5cf6' } }, 
+                            labels: { style: { colors: '#8b5cf6' } } 
+                        },
+                        { seriesName: '賺錢持倉 (Profit)', show: false } // 共用持倉Y軸
+                    ],
+                    plotOptions: {
+                        bar: {
+                            // 👇 設定柱狀圖圓角 (只讓最頂部的 Profit 柱有圓角，中間的 Loss 是平的)
+                            borderRadius: 4,
+                            borderRadiusApplication: 'around',
+                            borderRadiusWhenStacked: 'last'
+                        }
+                    },
+                    theme: { mode: 'dark' },
+                    legend: { position: 'top' },
+                    dataLabels: { enabled: false },
+                    grid: { borderColor: '#334155', strokeDashArray: 3 }
+                };
+            };
+            
+            new ApexCharts(document.querySelector("#chart-us"), createChartOptions('us')).render();
+            new ApexCharts(document.querySelector("#chart-jp"), createChartOptions('jp')).render();
+
+            // 👇 新增：策略持倉分佈圖 (Stacked Area Chart)
+            const exposureOptions = {
+                series: [
+                    { name: '🏆 VCP 突破', data: chartData.map(d => d.strat_vcp) },
+                    { name: '💥 BB 擠壓', data: chartData.map(d => d.strat_bb) },
+                    { name: '⚡ 缺口動能', data: chartData.map(d => d.strat_gap) },
+                    { name: '📉 極度超賣', data: chartData.map(d => d.strat_oversold) }
+                ],
+                chart: {
+                    type: 'area',
+                    height: 300,
+                    stacked: true, // 使用堆疊面積圖
+                    toolbar: { show: false },
+                    background: 'transparent'
+                },
+                colors: ['#a855f7', '#ec4899', '#3b82f6', '#14b8a6'], // 紫, 粉紅, 藍, 綠
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth', width: 2 },
+                fill: {
+                    type: 'gradient',
+                    gradient: { opacityFrom: 0.6, opacityTo: 0.1 }
+                },
+                legend: { position: 'top', labels: { colors: '#cbd5e1' } },
+                xaxis: {
+                    categories: dates,
+                    labels: { style: { colors: '#94a3b8' } },
+                    tickAmount: 10
+                },
+                yaxis: {
+                    title: { text: '持倉數量 (隻)', style: { color: '#94a3b8' } },
+                    labels: { style: { colors: '#94a3b8' } },
+                    min: 0,
+                    forceNiceScale: true
+                },
+                theme: { mode: 'dark' },
+                grid: { borderColor: '#334155', strokeDashArray: 3 }
+            };
+            
+            new ApexCharts(document.querySelector("#chart-exposure"), exposureOptions).render();
+
+            // ==========================================
+            // 👇 貼喺呢度：新增嘅策略累積 P&L 折線圖 (雙括號安全版)
+            // ==========================================
+            const pnlOptions = {
+                series: [
+                    { name: '🏆 VCP 突破', data: chartData.map(d => d.pnl_vcp) },
+                    { name: '💥 BB 擠壓', data: chartData.map(d => d.pnl_bb) },
+                    { name: '⚡ 缺口動能', data: chartData.map(d => d.pnl_gap) },
+                    { name: '📉 極度超賣', data: chartData.map(d => d.pnl_oversold) }
+                ],
+                chart: {
+                    type: 'line',
+                    height: 350,
+                    toolbar: { show: false },
+                    background: 'transparent'
+                },
+                colors: ['#a855f7', '#ec4899', '#3b82f6', '#14b8a6'],
+                dataLabels: { enabled: false },
+                stroke: { curve: 'smooth', width: 3 },
+                legend: { position: 'top', labels: { colors: '#cbd5e1' } },
+                xaxis: {
+                    categories: dates,
+                    labels: { style: { colors: '#94a3b8' } },
+                    tickAmount: 10
+                },
+                yaxis: {
+                    title: { text: '累積利潤 ($)', style: { color: '#94a3b8' } },
+                    labels: { 
+                        style: { colors: '#94a3b8' },
+                        formatter: (value) => "$" + value.toLocaleString() 
+                    }
+                },
+                theme: { mode: 'dark' },
+                grid: { borderColor: '#334155', strokeDashArray: 3 },
+                tooltip: {
+                    y: { formatter: function (val) { return "$" + val.toLocaleString() } }
+                }
+            };
+            
+            new ApexCharts(document.querySelector("#chart-cumulative-pnl"), pnlOptions).render(); 
+            // ==========================================
+
+            chartsRendered = true;
+        }
+        
+        function loadContent(ticker) {
+            currentSelectedTicker = ticker;
+            const isJp = ticker.endsWith('.T');
+            const tvSymbol = isJp ? 'TSE:' + ticker.replace('.T', '') : ticker;
+
+            const tvLink = document.getElementById('tv_out_link');
+            tvLink.href = `https://www.tradingview.com/chart/?symbol=${tvSymbol}`;
+            tvLink.classList.remove('hidden');
+
+            if (tvWidget) { tvWidget.remove(); }
+            tvWidget = new TradingView.widget({
+                "autosize": true, "symbol": tvSymbol, "interval": "D", "timezone": "Etc/UTC",
+                "theme": "dark", "style": "1", "locale": "en", "container_id": "tv_chart_container"
+            });
+
+            updateCalculator();
+        }
+
+        function updateCalculator() {
+            if (!currentSelectedTicker) return;
+            const data = rawData.find(d => d.ticker === currentSelectedTicker);
+            if (!data) return;
+
+            const isJp = data.ticker.endsWith('.T');
+            const unit = isJp ? '¥' : '$';
+
+            document.getElementById('calc_ticker_name').innerText = data.ticker + " (" + data.tag + ")";
+            const accountSize = parseFloat(document.getElementById('acc_size').value) || 10000;
+            const riskAmount = accountSize * 0.01;
+            
+            let shares = Math.floor(riskAmount / data.risk_per_share);
+            if (shares <= 0) shares = 0;
+            
+            const totalCost = shares * data.curr_price;
+            const actualPosPct = (accountSize > 0) ? (totalCost / accountSize * 100).toFixed(1) : 0;
+            
+            document.getElementById('calc_entry').innerText = unit + data.curr_price.toFixed(2);
+            document.getElementById('calc_sl').innerText = unit + data.sl_price.toFixed(2);
+            document.getElementById('calc_tp').innerText = unit + data.tp_price.toFixed(2);
+            document.getElementById('calc_shares').innerText = shares;
+            document.getElementById('calc_cost').innerText = unit + totalCost.toLocaleString(undefined, {maximumFractionDigits: 0}) + " (" + actualPosPct + "%)";
+        }      
+
+        // 👇 新增全域變數 (控制排序與過濾)
+        let currentSort = 'date';
+        let isAsc = false;
+        let sourcesLoaded = false;
+
+        function sortData(col) {
+            if (currentSort === col) { isAsc = !isAsc; } 
+            else { currentSort = col; isAsc = false; }
+            renderJournal();
+        }
+
+        // 數值格式化工具 (處理市值 Market Cap)
+        function formatMcap(val) {
+            if (!val) return '-';
+            if (val >= 1e12) return (val / 1e12).toFixed(1) + 'T';
+            if (val >= 1e9) return (val / 1e9).toFixed(1) + 'B';
+            if (val >= 1e6) return (val / 1e6).toFixed(1) + 'M';
+            return val.toLocaleString();
+        }
+
+        // 🌟 終極整合版 renderJournal
+        function renderJournal() {
+            const openTbody = document.getElementById('journal-open-tbody');
+            const closedTbody = document.getElementById('journal-closed-tbody');
+            const statsContainer = document.getElementById('journal-stats');
+
+            // 1️⃣ 讀取 Filter 數值 (防呆設計：如果 HTML 未加 Filter UI，就預設 ALL)
+            const stratFilter = document.getElementById('filter-strat') ? document.getElementById('filter-strat').value : 'ALL';
+            const sourceFilter = document.getElementById('filter-source') ? document.getElementById('filter-source').value : 'ALL';
+
+            // 動態載入來源 Filter 選項 (只執行一次)
+            if (!sourcesLoaded && document.getElementById('filter-source')) {
+                let allSources = new Set();
+                tradeHistory.forEach(t => { if(t.sources) t.sources.forEach(s => allSources.add(s)); });
+                const sourceSelect = document.getElementById('filter-source');
+                allSources.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s; opt.innerText = s;
+                    sourceSelect.appendChild(opt);
+                });
+                sourcesLoaded = true;
+            }
+
+            // 2️⃣ 過濾邏輯
+            let filteredHist = tradeHistory.filter(t => {
+                let matchStrat = stratFilter === 'ALL' || (t.tag && t.tag.includes(stratFilter));
+                let matchSource = sourceFilter === 'ALL' || (t.sources && t.sources.includes(sourceFilter));
+                return matchStrat && matchSource;
+            });
+
+            // 3️⃣ 排序邏輯
+            filteredHist.sort((a, b) => {
+                let valA = a[currentSort]; let valB = b[currentSort];
+                // 特殊處理：浮動盈虧排序
+                if (currentSort === 'pnl') {
+                    valA = a.status === 'OPEN' ? (a.last_px - a.px)/a.px : (a.last_px - a.px);
+                    valB = b.status === 'OPEN' ? (b.last_px - b.px)/b.px : (b.last_px - b.px);
+                }
+                if (valA < valB) return isAsc ? -1 : 1;
+                if (valA > valB) return isAsc ? 1 : -1;
+                return 0;
+            });
+
+            const opens = filteredHist.filter(t => t.status === 'OPEN');
+            const closeds = filteredHist.filter(t => t.status !== 'OPEN');
+
+            // ==========================================
+            // 📊 頂部 4 個總計數據方塊 (已經升級 75/25 會計)
+            // ==========================================
+            let totalClosedPnl = 0, wins = 0, totalOpenPnl = 0;
+            
+            closeds.forEach(t => {
+                totalClosedPnl += (10000 / t.px) * (t.last_px - t.px);
+                if (t.status.includes('✅')) wins++;
+            });
+            
+            opens.forEach(t => {
+                let buy_px = t.px;
+                let last_px = t.last_px;
+                // 🌟 混合會計公式：75% 已鎖定，25% 隨現價浮動
+                let tp1 = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px))*2); 
+                let pnl = t.partial_tp_hit ? 
+                    ((7500 / buy_px) * (tp1 - buy_px) + (2500 / buy_px) * (last_px - buy_px)) :
+                    (10000 / buy_px) * (last_px - buy_px);
+                totalOpenPnl += pnl;
+            });
+
+            const winRate = closeds.length > 0 ? ((wins / closeds.length) * 100).toFixed(1) : 0;
+            const closedPct = closeds.length > 0 ? ((totalClosedPnl / (closeds.length * 10000)) * 100).toFixed(2) : "0.00";
+            const openPct = opens.length > 0 ? ((totalOpenPnl / (opens.length * 10000)) * 100).toFixed(2) : "0.00";
+
+            const closedSign = totalClosedPnl >= 0 ? '+' : '';
+            const openSign = totalOpenPnl >= 0 ? '+' : '';
+            const closedColor = totalClosedPnl >= 0 ? 'text-emerald-400' : 'text-red-400';
+            const openColor = totalOpenPnl >= 0 ? 'text-emerald-400' : 'text-red-400';
+
+            statsContainer.innerHTML = `
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">已結案總利潤</div>
+                    <div class="text-2xl font-black ${closedColor}">${closedSign}$${totalClosedPnl.toFixed(0)} <span class="text-sm">(${closedSign}${closedPct}%)</span></div>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">歷史勝率</div>
+                    <div class="text-2xl font-black text-white">${winRate}%</div>
+                    <div class="text-[9px] text-slate-500 mt-1">${wins} 贏 / ${closeds.length - wins} 輸</div>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">目前未平倉</div>
+                    <div class="text-2xl font-black text-cyan-400">${opens.length} 隻</div>
+                </div>
+                <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">總浮動盈虧</div>
+                    <div class="text-2xl font-black ${openColor}">${openSign}$${totalOpenPnl.toFixed(0)} <span class="text-sm">(${openSign}${openPct}%)</span></div>
+                </div>
+            `;
+
+            // ==========================================
+            // 🎯 1. 生成策略卡片
+            // ==========================================
+            const strategyStats = {};
+            closeds.forEach(t => {
+                const strat = t.tag || '未分類';
+                if (!strategyStats[strat]) {
+                    strategyStats[strat] = { trades: 0, wins: 0, pnl: 0, deployed: 0 };
+                }
+                strategyStats[strat].trades += 1;
+                if (t.status.includes('✅')) strategyStats[strat].wins += 1;
+                strategyStats[strat].pnl += (10000 / t.px) * (t.last_px - t.px);
+                strategyStats[strat].deployed += 10000;
+            });
+
+            const strategyHtml = Object.keys(strategyStats).map(strat => {
+                const stats = strategyStats[strat];
+                const stratWinRate = ((stats.wins / stats.trades) * 100).toFixed(1);
+                const pColor = stats.pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
+                const pSign = stats.pnl >= 0 ? '+' : '';
+                return `
+                <div class="bg-slate-900/50 p-3 rounded-lg border border-slate-700/50 hover:border-fuchsia-500/50 transition">
+                    <div class="text-xs font-black text-white mb-2 uppercase px-1 bg-slate-800 inline-block rounded">${strat}</div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                        <span>勝率 (${stats.wins}/${stats.trades})</span><span class="font-bold text-white">${stratWinRate}%</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mb-1">
+                        <span>已動用資金</span><span class="font-bold">$${stats.deployed.toLocaleString()}</span>
+                    </div>
+                    <div class="flex justify-between text-[10px] text-slate-400 mt-2 pt-2 border-t border-slate-700">
+                        <span>實現利潤</span><span class="font-black ${pColor}">${pSign}$${stats.pnl.toFixed(0)}</span>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('strategy-stats-container').innerHTML = strategyHtml || '<div class="text-xs text-slate-500 italic p-2">暫無策略數據</div>';
+
+            // ==========================================
+            // 📈 2. 按進場指標 (RS / RSI) 分組統計
+            // ==========================================
+            const metricStats = {
+                rs: { '95-99 (極強)': { trades: 0, wins: 0, pnl: 0 }, '90-94 (強勢)': { trades: 0, wins: 0, pnl: 0 }, '80-89 (中等)': { trades: 0, wins: 0, pnl: 0 }, '< 80 (較弱)': { trades: 0, wins: 0, pnl: 0 } },
+                rsi: { '< 20 (極度超賣)': { trades: 0, wins: 0, pnl: 0 }, '20-25 (嚴重超賣)': { trades: 0, wins: 0, pnl: 0 }, '> 25 (輕微超賣)': { trades: 0, wins: 0, pnl: 0 } }
+            };
+
+            closeds.forEach(t => {
+                const isWin = t.status.includes('✅');
+                const tradePnl = (10000 / t.px) * (t.last_px - t.px);
+                
+                if (t.entry_metric) {
+                    if (t.entry_metric.startsWith('RS:')) {
+                        const rsVal = parseInt(t.entry_metric.replace('RS:', '').trim());
+                        let bucket = '< 80 (較弱)';
+                        if (rsVal >= 95) bucket = '95-99 (極強)';
+                        else if (rsVal >= 90) bucket = '90-94 (強勢)';
+                        else if (rsVal >= 80) bucket = '80-89 (中等)';
+                        
+                        metricStats.rs[bucket].trades++;
+                        if (isWin) metricStats.rs[bucket].wins++;
+                        metricStats.rs[bucket].pnl += tradePnl;
+                    } else if (t.entry_metric.startsWith('RSI:')) {
+                        const rsiVal = parseInt(t.entry_metric.replace('RSI:', '').trim());
+                        let bucket = '> 25 (輕微超賣)';
+                        if (rsiVal < 20) bucket = '< 20 (極度超賣)';
+                        else if (rsiVal <= 25) bucket = '20-25 (嚴重超賣)';
+                        
+                        metricStats.rsi[bucket].trades++;
+                        if (isWin) metricStats.rsi[bucket].wins++;
+                        metricStats.rsi[bucket].pnl += tradePnl;
+                    }
+                }
+            });
+
+            const renderMetricRows = (statsObj) => {
+                return Object.keys(statsObj).map(key => {
+                    const s = statsObj[key];
+                    if (s.trades === 0) return `<tr><td class="p-2 text-slate-500">${key}</td><td colspan="3" class="p-2 text-center text-slate-600 text-[10px]">無數據</td></tr>`;
+                    const winRate = ((s.wins / s.trades) * 100).toFixed(1);
+                    const pColor = s.pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
+                    const pSign = s.pnl >= 0 ? '+' : '';
+                    return `
+                    <tr class="border-b border-slate-700/50 hover:bg-slate-800 transition">
+                        <td class="p-2 font-bold text-white">${key}</td>
+                        <td class="p-2 text-center">${s.trades}</td>
+                        <td class="p-2 text-center font-bold text-cyan-400">${winRate}%</td>
+                        <td class="p-2 text-right font-black font-mono ${pColor}">${pSign}$${s.pnl.toFixed(0)}</td>
+                    </tr>`;
+                }).join('');
+            };
+
+            const rsTbody = document.getElementById('metric-rs-tbody');
+            const rsiTbody = document.getElementById('metric-rsi-tbody');
+            if(rsTbody) rsTbody.innerHTML = renderMetricRows(metricStats.rs);
+            if(rsiTbody) rsiTbody.innerHTML = renderMetricRows(metricStats.rsi);
+
+            // ==========================================
+            // 📂 3. 渲染 Open Positions (加入過濾/排序/板塊/市值/75%)
+            // ==========================================
+            const openThead = openTbody.parentElement.querySelector('thead');
+            openThead.innerHTML = `
+                <tr>
+                    <th class="p-2 cursor-pointer hover:text-white" onclick="sortData('date')">日期 ↕</th>
+                    <th class="p-2 cursor-pointer hover:text-white" onclick="sortData('tk')">代號 ↕</th>
+                    <th class="p-2">策略 & 來源</th>
+                    <th class="p-2 cursor-pointer hover:text-white" onclick="sortData('sector')">板塊 (Sector) ↕</th>
+                    <th class="p-2 cursor-pointer hover:text-white text-right" onclick="sortData('mcap')">市值 ↕</th>
+                    <th class="p-2 text-center">持倉狀態</th>
+                    <th class="p-2">進場指標</th>
+                    <th class="p-2 text-right cursor-pointer hover:text-white" onclick="sortData('pnl')">回報 (%) ↕</th>
+                </tr>
+            `;
+
+            openTbody.innerHTML = opens.length === 0 ? '<tr><td colspan="8" class="p-4 text-center text-slate-500">目前無符合條件持倉</td></tr>' : opens.map(t => {
+                let pnl = 0;
+                let buy_px = t.px;
+                let last_px = t.last_px;
+                
+                // 🌟 75/25 混合會計公式
+                if (t.partial_tp_hit) {
+                    let tp1_price = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px)) * 2);
+                    let pnl_closed = (7500 / buy_px) * (tp1_price - buy_px);
+                    let pnl_floating = (2500 / buy_px) * (last_px - buy_px);
+                    pnl = pnl_closed + pnl_floating; 
+                } else {
+                    pnl = (10000 / buy_px) * (last_px - buy_px);
+                }
+                
+                let pnlPct = ((last_px - buy_px) / buy_px * 100).toFixed(2);
+                const pColor = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
+                
+                // 1. 動態生成 Source 標籤
+                let sourceBadges = (t.sources || []).map(s => `<span class="text-[8px] bg-blue-500/20 text-blue-300 px-1 rounded ml-1 border border-blue-500/30">${s}</span>`).join('');
+                
+                // 2. 👇 動態生成高階量化標籤 (Smart Badges)
+                let featureBadges = '';
+                if (t.features) {
+                    if (t.features.mss) featureBadges += `<span class="text-[8px] bg-purple-500/20 text-purple-300 px-1 rounded ml-1 border border-purple-500/30" title="Market Structure Shift">🛡️ MSS</span>`;
+                    if (t.features.smc) featureBadges += `<span class="text-[8px] bg-sky-500/20 text-sky-300 px-1 rounded ml-1 border border-sky-500/30" title="Smart Money Order Block">🐋 SMC</span>`;
+                    if (t.features.amd) featureBadges += `<span class="text-[8px] bg-orange-500/20 text-orange-300 px-1 rounded ml-1 border border-orange-500/30" title="Accumulation/Manipulation">🔄 AMD</span>`;
+                    if (t.features.ml_rsi) featureBadges += `<span class="text-[8px] bg-pink-500/20 text-pink-300 px-1 rounded ml-1 border border-pink-500/30">🧠 ML-RSI: ${t.features.ml_rsi}</span>`;
+                }
+
+                return `
+                <tr class="border-b border-slate-700/50 hover:bg-slate-800 transition">
+                    <td class="p-2">${t.date}</td>
+                    <td class="p-2 font-bold text-white">${t.tk}</td>
+                    
+                    <!-- 👇 將 featureBadges 加埋入去 -->
+                    <td class="p-2 flex flex-wrap items-center gap-1 mt-1">
+                        <span class="text-[9px] bg-slate-700 px-1 rounded">${t.tag || 'N/A'}</span>
+                        ${sourceBadges}
+                        ${featureBadges}
+                    </td>
+                    
+                    <td class="p-2 text-[10px] text-slate-400 truncate max-w-[100px]">${t.sector || 'N/A'}</td>
+                    <td class="p-2 text-[10px] text-slate-400 font-mono text-right">${formatMcap(t.mcap)}</td>
+                    <td class="p-2 text-center">
+                        ${t.partial_tp_hit 
+                            ? '<span class="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 text-[10px] font-black">🎯 75% 已止盈 (25% 放飛)</span>' 
+                            : '<span class="text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[10px] font-black">⏳ 100% 正常持倉中</span>'
+                        }
+                    </td>
+                    <td class="p-2 text-[10px] font-mono text-indigo-300">${t.entry_metric || '-'}</td>
+                    <td class="p-2 text-right font-black font-mono ${pColor}">${pnl >= 0 ? '+' : ''}${pnlPct}%<br><span class="text-[9px] font-normal opacity-70">${pnl >= 0 ? '+' : ''}$${pnl.toFixed(0)}</span></td>
+                </tr>`;
+            }).join('');
+
+            // ==========================================
+            // 📁 4. 渲染 Closed Trades (維持原本顯示)
+            // ==========================================
+            const closedThead = document.querySelector('#journal-closed-tbody').parentElement.querySelector('thead');
+            if(closedThead) {
+                closedThead.innerHTML = `
+                    <tr>
+                        <th class="p-2">買入日期</th><th class="p-2">平倉日期</th><th class="p-2">代號</th>
+                        <th class="p-2">策略</th><th class="p-2 text-indigo-400">進場指標</th><th class="p-2">狀態</th>
+                        <th class="p-2">買入價</th><th class="p-2">賣出價</th>
+                        <th class="p-2 text-right">實現 P&L</th><th class="p-2 text-right">回報 (%)</th>
+                    </tr>
+                `;
+            }
+
+            closedTbody.innerHTML = closeds.length === 0 ? '<tr><td colspan="10" class="p-4 text-center text-slate-500">無結案紀錄</td></tr>' : closeds.slice(0,50).map(t => {
+                const pnl = (10000 / t.px) * (t.last_px - t.px);
+                const pnlPct = ((t.last_px - t.px) / t.px * 100).toFixed(2);
+                const isWin = t.status.includes('✅');
+                const pColor = isWin ? 'text-emerald-400' : 'text-red-400';
+                const isJp = t.tk.endsWith('.T');
+                const unit = isJp ? '¥' : '$';
+
+                return `
+                <tr class="border-b border-slate-700/50 hover:bg-slate-800 transition">
+                    <td class="p-2 text-slate-400">${t.date}</td>
+                    <td class="p-2">${t.close_date || t.date}</td>
+                    <td class="p-2 font-bold text-white">${t.tk}</td>
+                    <td class="p-2 text-[10px] text-slate-400">${t.tag || 'N/A'}</td>
+                    <td class="p-2 text-[10px] font-mono text-indigo-300">${t.entry_metric || '-'}</td>
+                    <td class="p-2">${(() => {
+                        if (t.status.includes("MAX TP")) return '<span class="text-fuchsia-400 font-bold">🏆 終極止賺</span>';
+                        if (t.status.includes("TRAIL EXIT")) return '<span class="text-blue-400 font-bold">🚀 放飛平倉</span>';
+                        if (t.status.includes("✅")) return '<span class="text-emerald-400 font-bold">🎯 止盈</span>';
+                        return '<span class="text-red-400 font-bold">🛑 止損</span>';
+                    })()}</td>
+                    <td class="p-2">${unit}${t.px}</td>
+                    <td class="p-2 text-white font-bold">${unit}${t.last_px}</td>
+                    <td class="p-2 text-right font-black font-mono ${pColor}">${pnl >= 0 ? '+' : ''}${pnl.toFixed(2)}</td>
+                    <td class="p-2 text-right font-black font-mono ${pColor}">${pnl >= 0 ? '+' : ''}${pnlPct}%</td>
+                </tr>`;
+            }).join('');
+        }
+    </script>
+</body>
+</html>
