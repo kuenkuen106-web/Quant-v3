@@ -1,0 +1,27 @@
+[
+    {
+        "date": "2026-08-03",
+        "tk": "5332.T",
+        "px": 6171.0,
+        "sl": 5725.29,
+        "tp": 7508.14,
+        "initial_sl": 5725.29,
+        "tp1_price": 6616.71,
+        "last_px": 6171.0,
+        "status": "OPEN",
+        "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
+        "entry_metric": "RSI: 17",
+        "curr_metric": "RSI: 17",
+        "sources": [
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "Industrials",
+        "mcap": 1014836363264,
+        "features": {
+            "mss": false,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 17.6
+        }
+    }
+]
