@@ -52,7 +52,7 @@ def get_stock_info(tk):
         STOCK_INFO_CACHE[tk] = {'sector': 'N/A', 'mcap': 0}
         return STOCK_INFO_CACHE[tk]
 
-def send_discord_alert(ticker, strategy_name, price, sl, tp, is_bullish, sources, tp1_price=None):
+def send_discord_alert(ticker, strategy_name, price, sl, tp, embed_color, sources, tp1_price=None):
     if not DISCORD_WEBHOOK_URL: return
     unit = "¥" if ticker.endswith(".T") else "$"
     
@@ -62,7 +62,9 @@ def send_discord_alert(ticker, strategy_name, price, sl, tp, is_bullish, sources
     else:
         source_str = "#動態掃描"
         
-    color = 65280 if is_bullish else 16711680 
+    # ✨ 直接使用傳入嘅全球大市顏色
+    color = embed_color
+
     type_str = "**波段建倉 (Swing)**" if strategy_name in ["🏆 VCP 突破", "💥 BB 擠壓"] else "**短線游擊 (Short Term)**"
     trail_str = "跌穿 5日新低" if "短線" in type_str else "跌穿 20日新低"
     tp1_val = tp1_price if tp1_price else tp
@@ -498,6 +500,20 @@ n225_price, n225_200ma = float(closes['^N225'].iloc[-1]), float(closes['^N225'].
 us_macro_status, us_macro_color, us_action = evaluate_market_health(spx_price, spx_200ma, us_matrix['index_50ma_pct'], us_matrix['total_50ma_pct'], us_matrix['index_200ma_pct'], us_matrix['total_20ma_pct'], us_dist)
 jp_macro_status, jp_macro_color, jp_action = evaluate_market_health(n225_price, n225_200ma, jp_matrix['index_50ma_pct'], jp_matrix['total_50ma_pct'], jp_matrix['index_200ma_pct'], jp_matrix['total_20ma_pct'], jp_dist)
 
+# =========================================================================
+# 🌍 全球大市顏色綜合判定 (Global Embed Color)
+# =========================================================================
+# 定義「OK」: 只要顏色唔係 16711680 (紅色/熊市) 就代表嗰個市場 OK
+us_is_ok = (us_macro_color != 16711680)
+jp_is_ok = (jp_macro_color != 16711680)
+
+if us_is_ok and jp_is_ok:
+    global_embed_color = 65280     # 🟢 雙市場 OK -> 綠色
+elif not us_is_ok and not jp_is_ok:
+    global_embed_color = 16711680  # 🔴 雙市場死火 -> 紅色
+else:
+    global_embed_color = 16766720  # 🟡 混合市況 (一好一壞) -> 黃色
+
 # 繪製 SPY 圖表
 spy_c, spy_v, spy_l = closes['SPY'], vols['SPY'], lows['SPY']
 spy_20, spy_50, spy_200 = spy_c.rolling(20).mean(), spy_c.rolling(50).mean(), spy_c.rolling(200).mean()
@@ -840,11 +856,43 @@ for ticker in valid_tickers:
                 'entry_metric': entry_metric, 'curr_metric': entry_metric
             }
 
-        elif is_gap_up or is_oversold:
-            tag_name = "⚡ 缺口動能" if is_gap_up else "📉 極度超賣"
-            sl_p, tp_p = round(cp * 0.95, 2), round(cp * 1.15, 2)
+        # =================================================================
+        # 獨立處理 1：⚡ 缺口動能 (爆發力強 -> 要求 2R 盈虧比)
+        # =================================================================
+        elif is_gap_up:
+            if is_red_light: continue # 熊市嚴禁做「缺口高開」接火棒
+            
+            tag_name = "⚡ 缺口動能"
+            sl_p = round(cp - (2.0 * catr), 2)  # 畀多啲空間避開震倉
+            tp_p = round(cp + (6.0 * catr), 2)
             risk_per_share = cp - sl_p
-            entry_metric = f"RSI: {int(rsi_val)}" if is_oversold else f"RS: {int(rs)}"
+            entry_metric = f"RS: {int(rs)}"
+            
+            # 動能爆發，強制要求 TP1 達到 2R，修復 EV (數學期望值)！
+            tp1_price = round(cp + (risk_per_share * 2.0), 2)
+            
+            short_term_results.append({'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name})
+            
+            trade_info = {
+                'date': today_str, 'tk': ticker, 'px': round(cp, 2), 
+                'sl': sl_p, 'tp': tp_p, 'initial_sl': sl_p, 'tp1_price': tp1_price,
+                'last_px': round(cp, 2), 'status': 'OPEN', 'tag': tag_name, 
+                'entry_metric': entry_metric, 'curr_metric': entry_metric
+            }
+
+        # =================================================================
+        # 獨立處理 2：📉 極度超賣 (搶反彈 -> 1R 提早鎖定利潤，防禦極端單邊市)
+        # =================================================================
+        elif is_oversold:
+            tag_name = "📉 極度超賣"
+            
+            # 超賣撈底需要極窄止損，錯咗即走！(改用 1.5 倍 ATR)
+            sl_p = round(cp - (1.5 * catr), 2)
+            tp_p = round(cp + (4.5 * catr), 2)
+            risk_per_share = cp - sl_p
+            entry_metric = f"RSI: {int(rsi_val)}"
+            
+            # 搶反彈見好就收，保留 1R 觸發 TP1，保本最重要！
             tp1_price = round(cp + (risk_per_share * 1.0), 2)
             
             short_term_results.append({'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name})
@@ -869,7 +917,7 @@ for ticker in valid_tickers:
                 'amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
             }
             
-            send_discord_alert(ticker, tag_name, round(cp, 2), sl_p, tp_p, True, ticker_sources, tp1_price=tp1_price)
+            send_discord_alert(ticker, tag_name, round(cp, 2), sl_p, tp_p, global_embed_color, ticker_sources, tp1_price=tp1_price)
             if not any(t.get('tk') == ticker and t.get('status') == 'OPEN' for t in trade_history):
                  trade_history.append(trade_info)
             
