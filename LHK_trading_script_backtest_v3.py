@@ -870,6 +870,26 @@ short_term_results.sort(key=lambda x: x['rs'], reverse=True)
 # 保留 20000 條紀錄以確保歷史倉位對帳準確
 with open(HISTORY_FILE, "w", encoding="utf-8") as f: json.dump(trade_history[-20000:], f, indent=4)
 
+# =========================================================================
+# 📊 額外擴充：將 Trade History 自動匯出為 CSV 方便 Excel 覆盤
+# =========================================================================
+import csv
+
+CSV_EXPORT_FILE = os.path.join(OUTPUT_DIR, "uat_trade_history.csv")
+
+if trade_history:
+    # 提取所有出現過嘅欄位 Key 作為 CSV Header
+    keys = trade_history[0].keys()
+    
+    try:
+        with open(CSV_EXPORT_FILE, 'w', newline='', encoding='utf-8-sig') as output_file:
+            dict_writer = csv.DictWriter(output_file, fieldnames=keys)
+            dict_writer.writeheader()
+            dict_writer.writerows(trade_history)
+        print(f"📁 [UAT 覆盤] 成功匯出交易紀錄至 CSV 檔案：{CSV_EXPORT_FILE}")
+    except Exception as e:
+        print(f"⚠️ CSV 匯出失敗: {e}")
+
 # =============================================================================
 # MODULE 6 — 總結算與 Discord 報告 (UAT 詳盡數據統一版)
 # =============================================================================
