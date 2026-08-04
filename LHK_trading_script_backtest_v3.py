@@ -1832,7 +1832,7 @@ html = f"""<!DOCTYPE html>
             }}).join('');
         }}
 
-        function renderThemesTab() {{
+function renderThemesTab() {{
             // 1. 渲染板塊熱度榜
             const sectorTbody = document.getElementById('themes-sector-tbody');
             if (themesData.sectors.length === 0) {{
@@ -1840,9 +1840,9 @@ html = f"""<!DOCTYPE html>
             }} else {{
                 sectorTbody.innerHTML = themesData.sectors.map(s => `
                     <tr class="border-b border-slate-700/50 hover:bg-slate-800 transition">
-                        <td class="p-2 font-bold text-white">${s.sector}</td>
-                        <td class="p-2 text-center font-black text-fuchsia-400">${s.count} 隻</td>
-                        <td class="p-2 font-mono text-[10px] text-slate-300">${s.tickers.join(', ')}</td>
+                        <td class="p-2 font-bold text-white">${{s.sector}}</td>
+                        <td class="p-2 text-center font-black text-fuchsia-400">${{s.count}} 隻</td>
+                        <td class="p-2 font-mono text-[10px] text-slate-300">${{s.tickers.join(', ')}}</td>
                     </tr>
                 `).join('');
             }}
@@ -1853,12 +1853,12 @@ html = f"""<!DOCTYPE html>
                 stocksTbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">目前沒有符合條件的潛力異動股</td></tr>`;
             }} else {{
                 stocksTbody.innerHTML = themesData.stocks.map(st => `
-                    <tr class="border-b border-slate-700/50 hover:bg-slate-800 transition cursor-pointer hover:bg-amber-950/20" onclick="loadContent('${st.ticker}')">
-                        <td class="p-2 font-bold text-white">${st.ticker}</td>
-                        <td class="p-2 text-[10px] text-slate-400 truncate max-w-[120px]">${st.sector}</td>
-                        <td class="p-2 text-center font-bold text-cyan-400">${st.rs}</td>
-                        <td class="p-2 text-center font-bold text-emerald-400">+${st.mom}</td>
-                        <td class="p-2 text-right font-black font-mono text-white">${st.unit}${st.price}</td>
+                    <tr class="border-b border-slate-700/50 hover:bg-slate-800 transition cursor-pointer hover:bg-amber-950/20" onclick="loadContent('${{st.ticker}}')">
+                        <td class="p-2 font-bold text-white">${{st.ticker}}</td>
+                        <td class="p-2 text-[10px] text-slate-400 truncate max-w-[120px]">${{st.sector}}</td>
+                        <td class="p-2 text-center font-bold text-cyan-400">${{st.rs}}</td>
+                        <td class="p-2 text-center font-bold text-emerald-400">+${{st.mom}}</td>
+                        <td class="p-2 text-right font-black font-mono text-white">${{st.unit}}${{st.price}}</td>
                     </tr>
                 `).join('');
             }}
