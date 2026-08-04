@@ -134,7 +134,7 @@ def build_dynamic_watchlist():
         ("https://en.wikipedia.org/wiki/List_of_S%26P_500_companies", "S&P500_大盤"),
         ("https://en.wikipedia.org/wiki/List_of_S%26P_400_companies", "S&P400_中型"),
         ("https://en.wikipedia.org/wiki/List_of_S%26P_600_companies", "S&P600_小型"),
-        ("https://en.wikipedia.org/wiki/Nasdaq-100", "NDX100_科技")]
+        ("https://en.wikipedia.org/wiki/List_of_NASDAQ-100_companies", "NDX100_科技")]
 
         for url, label in wiki_us_indexes:
             res = requests.get(url, headers={'User-Agent': ua.random}, timeout=10)
@@ -577,11 +577,13 @@ for trade in trade_history:
                 tk_trail_low = dict_low5.get(tk, today_low) if is_short_term else dict_low20.get(tk, today_low)
                 
                 if today_low <= tk_trail_low:
-                    trade['last_px'] = round((tp1_price + max(today_low, tk_trail_low)) / 2, 2)
+                    # 放飛被掃出局：尾倉 25% 以 trail_low 價格離場
+                    trade['last_px'] = max(today_low, tk_trail_low) 
                     trade['status'], trade['close_date'] = '✅ TRAIL EXIT', today_str
                     closed_this_run.append(trade)
                 elif hit_tp:
-                    trade['last_px'] = round((tp1_price + tp) / 2, 2)
+                    # 撞 MAX TP 爆升：尾倉 25% 以 tp 價格完美止賺
+                    trade['last_px'] = tp 
                     trade['status'], trade['close_date'] = '✅ MAX TP', today_str
                     closed_this_run.append(trade)
             else:
@@ -850,11 +852,26 @@ for ticker in valid_tickers:
             }
 
         # =================================================================
-        # 獨立處理 1：⚡ 缺口動能 (爆發力強 -> 要求 2R 盈虧比)
+        # 獨立處理 1：⚡ 缺口動能 (爆發力強 -> 要求 1.5R 盈虧比)
         # =================================================================
         elif is_gap_up:
             if is_red_light: continue # 熊市嚴禁做「缺口高開」接火棒
             
+            # 👇 Manager 特批：美股「精英制」缺口放行條件
+            if not is_jp:
+                # 條件 A：大市必須係「🟢 全面牛市」(黃燈/紅燈一律禁賽)
+                if is_mild_bull: continue 
+                
+                # 條件 B：只做真正的市場領頭羊 (RS 必須 > 90)
+                if rs < 90: continue 
+                
+                # 條件 C：極高流動性防護 (每日平均成交額 > 5000萬美金，過濾容易被操控的中小企)
+                if dict_dollar_vol.get(ticker, 0) < 50_000_000: continue
+                
+                # 條件 D：爆發力必須異常強大 (當日成交量大於 20日平均的 3倍！)
+                if c_vol < v_ma20 * 3: continue
+            
+            # 如果過到上面嘅地獄測試 (或者本身係日股)，就可以正常建倉！
             tag_name = "⚡ 缺口動能"
             sl_p = round(cp - (2.0 * catr), 2)  # 畀多啲空間避開震倉
             tp_p = round(cp + (6.0 * catr), 2)
@@ -872,7 +889,7 @@ for ticker in valid_tickers:
                 'last_px': round(cp, 2), 'status': 'OPEN', 'tag': tag_name, 
                 'entry_metric': entry_metric, 'curr_metric': entry_metric
             }
-
+            
         # =================================================================
         # 獨立處理 2：📉 極度超賣 (搶反彈 -> 1R 提早鎖定利潤，防禦極端單邊市)
         # =================================================================
@@ -1813,7 +1830,7 @@ html = f"""<!DOCTYPE html>
                     }}
                 }}
 
-                let pnlPct = ((last_px - buy_px) / buy_px * 100).toFixed(2);
+                let pnlPct = (pnl / 10000 * 100).toFixed(2);
                 let pColor = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
                 let unit = t.tk.endsWith('.T') ? '¥' : '$';
                 let statusBadge = isClosed ? `<span class="text-slate-400 font-bold">${{t.status}}</span>` : `<span class="text-cyan-400 font-black bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-800">OPEN 持倉中</span>`;
@@ -2316,7 +2333,7 @@ function renderThemesTab() {{
                     pnl = (10000 / buy_px) * (last_px - buy_px);
                 }}
                 
-                let pnlPct = ((last_px - buy_px) / buy_px * 100).toFixed(2);
+                let pnlPct = (pnl / 10000 * 100).toFixed(2);
                 const pColor = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
                 
                 // 1. 動態生成 Source 標籤
@@ -2373,7 +2390,7 @@ function renderThemesTab() {{
 
             closedTbody.innerHTML = closeds.length === 0 ? '<tr><td colspan="10" class="p-4 text-center text-slate-500">無結案紀錄</td></tr>' : closeds.slice(0,50).map(t => {{
                 const pnl = (10000 / t.px) * (t.last_px - t.px);
-                const pnlPct = ((t.last_px - t.px) / t.px * 100).toFixed(2);
+                const pnlPct = (pnl / 10000 * 100).toFixed(2);
                 const isWin = t.status.includes('✅');
                 const pColor = isWin ? 'text-emerald-400' : 'text-red-400';
                 const isJp = t.tk.endsWith('.T');
