@@ -192,37 +192,46 @@ def build_dynamic_watchlist():
         ]
         add_to_map(sp500_fallback, "S&P500")
         print(f"  ✅ 成功載入 S&P 500 後備名單 (共 {len(sp500_fallback)} 隻)")
+        
     # ---------------------------------------------------------
     # 2. 獲取 Finviz 異動股 (Unusual Volume & Top Gainers)
     # ---------------------------------------------------------
-    # 呢度係捕捉「當日最熱門」標的關鍵
     finviz_urls = [
         ("https://finviz.com/screener.ashx?v=111&s=ta_topgainers", "Finviz升幅"),
         ("https://finviz.com/screener.ashx?v=111&s=ta_unusualvolume", "Finviz異動")
     ]
     for url, label in finviz_urls:
         try:
-            # 每次需要 headers 時，呼叫 ua.random
-            headers = {'User-Agent': ua.random}
+            # 💡 破解 1：放棄 random UA，改用寫死嘅「最標準現代 Chrome」面具，並加入 Accept 欺騙防火牆
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept-Language': 'en-US,en;q=0.5'
+            }
             res = requests.get(url, headers=headers, timeout=10)
-            tables = pd.read_html(res.text)
-            # Finviz 的股票代號通常在最後幾個表格中，且長度為 1-5 字符
-            for df in tables[-3:]: 
-                if 1 in df.columns:
-                    found = [str(t) for t in df[1].tolist() if str(t).isupper() and 1 <= len(str(t)) <= 5]
-                    if found:
-                        add_to_map(found, label)
-                        print(f"  🔥 捕捉到 {label}: {len(found)} 隻")
-                        break
-        except:
-            print(f"  ⚠️ {label} 抓取略過")
+            
+            if res.status_code == 200:
+                import re
+                # 💡 破解 2：無視 DataFrame 表格，直接暴力抽取 href="quote.ashx?t=AAPL" 裡面的代號
+                matches = re.findall(r'quote\.ashx\?t=([A-Z]+)', res.text)
+                
+                if matches:
+                    # 去除重複，Finviz 首頁通常顯示 20 隻
+                    found = list(dict.fromkeys(matches))
+                    add_to_map(found, label)
+                    print(f"  🔥 成功捕捉到 {label}: {len(found)} 隻")
+                else:
+                    print(f"  ⚠️ {label} 抓取略過: 找不到代號 (可能被 Cloudflare 阻擋)")
+            else:
+                print(f"  ⚠️ {label} 抓取略過: HTTP {res.status_code}")
+        except Exception as e:
+            print(f"  ⚠️ {label} 抓取略過: {e}")
 
     # ---------------------------------------------------------
     # 3. 獲取日股動態名單 (Nikkei 225 + 當日熱門)
     # ---------------------------------------------------------
     wiki_jp_indexes = [
-        ("https://en.wikipedia.org/wiki/Nikkei_225", "NK225"),
-        ("https://en.wikipedia.org/wiki/TOPIX_100", "TOPIX100"),
+        ("https://zh.wikipedia.org/zh-hk/%E6%97%A5%E7%B6%93%E5%B9%B3%E5%9D%87%E6%8C%87%E6%95%B0", "NK225"),
         ("https://ja.wikipedia.org/wiki/TOPIX_Mid400", "TOPIX_Mid400_中型"),
         ("https://ja.wikipedia.org/wiki/TOPIX_Small500", "TOPIX_Small500_小型")
     ]
@@ -235,30 +244,42 @@ def build_dynamic_watchlist():
                     
                 import re
                 target_col = None
-                # 自動尋找包含最多股票代號嘅表格 (日股通常係 4 位數字)
                 target_table = max(tables, key=len)
                     
                 for col in target_table.columns:
                     col_name = str(col).lower()
-                    if 'code' in col_name or 'ticker' in col_name or 'symbol' in col_name or 'コード' in col_name:
+                    # 💡 加入中文「編號」與「编号」嘅欄位名稱匹配
+                    if 'code' in col_name or 'ticker' in col_name or 'symbol' in col_name or 'コード' in col_name or '編號' in col_name or '编号' in col_name:
                         target_col = col; break
                     
                 if target_col is None:
                     for col in target_table.columns:
                         sample_vals = target_table[col].dropna().astype(str).tolist()[:5]
-                        if sample_vals and all(re.match(r'^\d{4}$', str(x)) for x in sample_vals):
+                        # 💡 放寬驗證：只要字串入面包含連續 4 個數字就當係
+                        if sample_vals and all(re.search(r'\d{4}', str(x)) for x in sample_vals):
                             target_col = col; break
 
                 if target_col is not None:
-                    found_nk = [f"{str(x)}.T" for x in target_table[target_col] if re.match(r'^\d{4}$', str(x))]
+                    found_nk = []
+                    for x in target_table[target_col].dropna():
+                        # 💡 核心修復：用 re.search 抽走「東證1部：1332」入面嘅「1332」
+                        match = re.search(r'(\d{4})', str(x))
+                        if match:
+                            found_nk.append(f"{match.group(1)}.T")
+                            
                     add_to_map(list(dict.fromkeys(found_nk)), label)
                     print(f"  ✅ 成功從 Wikipedia 載入 {label} (共 {len(found_nk)} 隻)")
             except Exception as e:
                 print(f"  ⚠️ {label} 載入失敗: {e}")
     except Exception as e:
-            print(f"  ⚠️ 日股名單載入失敗: {e}")
+            print(f"  ⚠️ 日股名單爬蟲區發生錯誤: {e}")
+            
+    # 👇 全局防呆保險絲 👇
+    jp_index_count = len([tk for tk, src in ticker_sources.items() if 'NK225' in src])
+    if jp_index_count < 50:
+        print("🆘 偵測到日股大盤抓取異常，強制啟動 NK225 超級後備名單！")
             # 如果 fail, 手動加入2026/04/05 list
-            nk225_tickers = [
+        nk225_tickers = [
             "1332.T", "1605.T", "1721.T", "1801.T", "1802.T", "1803.T", "1812.T", "1925.T", "1928.T", "1963.T",
             "2002.T", "2267.T", "2282.T", "2413.T", "2432.T", "2501.T", "2502.T", "2503.T", "2531.T", "2768.T",
             "2801.T", "2802.T", "2871.T", "2914.T", "3086.T", "3099.T", "3101.T", "3103.T", "3289.T", "3382.T",
@@ -284,21 +305,31 @@ def build_dynamic_watchlist():
             "9843.T", "9983.T", "9984.T"
             ]
             # 執行合併
-            add_to_map(nk225_tickers, "NK225")
+        add_to_map(nk225_tickers, "NK225")
 
-    # B. 捕捉 JP Trending (保持不變)
+    # B. 捕捉 JP Trending (全新 HTML 正則破解版)
     try:
-        jp_trending_url = "https://query1.finance.yahoo.com/v1/finance/trending/JP?count=20"
-        # 每次需要 headers 時，呼叫 ua.random
+        # 💡 直接訪問 Yahoo Japan 的實時成交量排行榜 (最能反映當日熱錢流向)
+        jp_trending_url = "https://finance.yahoo.co.jp/ranking/volume" 
         headers = {'User-Agent': ua.random}
-        res_jp = requests.get(jp_trending_url, headers=headers, timeout=5)
-        # 加入 len 檢查，防止 list index out of range
-        if res_jp.status_code == 200 and len(res_jp.json().get('finance', {}).get('result', [])) > 0:
-            jp_trending = [q['symbol'] for q in res_jp.json()['finance']['result'][0]['quotes']]
-            add_to_map(jp_trending, "JP熱門")
-            print(f"  🔥 捕捉到日股當日焦點: {len(jp_trending)} 隻")
+        res_jp = requests.get(jp_trending_url, headers=headers, timeout=10)
+        
+        if res_jp.status_code == 200:
+            import re
+            # Yahoo JP 的股票連結格式為 /quote/7203.T，我們直接用 Regex 暴力提取！
+            matches = re.findall(r'/quote/(\d{4}\.T)', res_jp.text)
+            
+            if matches:
+                # 移除重複項目，並保留最熱門的前 30 隻黑馬
+                jp_trending = list(dict.fromkeys(matches))[:30]
+                add_to_map(jp_trending, "JP熱門")
+                print(f"  🔥 成功捕捉到日股當日熱錢焦點 (Yahoo JP): {len(jp_trending)} 隻")
+            else:
+                print("  ⚠️ JP Trending: 網頁結構改變，找不到代號")
+        else:
+            print(f"  ⚠️ JP Trending 失敗: HTTP {res_jp.status_code}")
     except Exception as e:
-        print(f"  ⚠️ JP Trending 略過: API 未返回數據")
+        print(f"  ⚠️ JP Trending 略過: {e}")
 
     add_to_map(['SPY', '^VIX', '^N225'], "基準指數")
     return ticker_sources
@@ -889,7 +920,7 @@ for ticker in valid_tickers:
                 'last_px': round(cp, 2), 'status': 'OPEN', 'tag': tag_name, 
                 'entry_metric': entry_metric, 'curr_metric': entry_metric
             }
-            
+
         # =================================================================
         # 獨立處理 2：📉 極度超賣 (搶反彈 -> 1R 提早鎖定利潤，防禦極端單邊市)
         # =================================================================
