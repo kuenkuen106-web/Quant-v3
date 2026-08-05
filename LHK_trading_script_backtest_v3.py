@@ -62,7 +62,7 @@ def get_stock_info(tk):
         STOCK_INFO_CACHE[tk] = {'sector': 'N/A', 'mcap': 0}
         return STOCK_INFO_CACHE[tk]
 
-def send_discord_alert(ticker, strategy_name, price, sl, tp, embed_color, sources, tp1_price=None):
+def send_discord_alert(ticker, strategy_name, price, sl, tp, embed_color, sources, tp1_price=None, features=None):
     if not DISCORD_WEBHOOK_URL: return
     unit = "¥" if ticker.endswith(".T") else "$"
     
@@ -72,26 +72,35 @@ def send_discord_alert(ticker, strategy_name, price, sl, tp, embed_color, source
     else:
         source_str = "#動態掃描"
         
-    # ✨ 直接使用傳入嘅全球大市顏色
     color = embed_color
 
     type_str = "**波段建倉 (Swing)**" if strategy_name in ["🏆 VCP 突破", "💥 BB 擠壓"] else "**短線游擊 (Short Term)**"
     trail_str = "跌穿 5日新低" if "短線" in type_str else "跌穿 20日新低"
     tp1_val = tp1_price if tp1_price else tp
     
-    # 👇 改成平倉 75%
     action_text = f"{type_str}\n1️⃣ **TP1:** `{unit}{tp1_val}` (平倉 75% 並保本)\n2️⃣ **TP2 (Trail):** {trail_str}清倉\n3️⃣ **Max TP:** `{unit}{tp}` (全數強制平倉)"
+    
+    # 👇 新增：動態生成 Discord 專用嘅機構特徵字串
+    feature_str = ""
+    if features:
+        badges = []
+        if features.get('mss'): badges.append("🛡️ MSS")
+        if features.get('smc'): badges.append("🐋 SMC")
+        if features.get('amd'): badges.append("🔄 AMD")
+        score = len(badges)
+        rsi_val = features.get('ml_rsi', '-')
+        badge_text = " | ".join(badges) if badges else "無特殊共振"
+        feature_str = f"\n🧬 共振度: **{score}/3**\n🔖 特徵: {badge_text} | 🧠 RSI: {rsi_val}"
     
     embed_data = {
         "title": f"🚨 系統異動觸發: {ticker}",
-        "description": f"**{strategy_name}** 條件已達成！\n🔍 來源: **{source_str}**",
+        "description": f"**{strategy_name}** 條件已達成！\n🔍 來源: **{source_str}**{feature_str}", # 👈 塞入 description
         "color": color,
         "fields": [
             {"name": "💵 當前現價", "value": f"{unit}{price}", "inline": True},
             {"name": "🛑 初始止損", "value": f"{unit}{sl}", "inline": True},
             {"name": "⚙️ 離場策略", "value": action_text, "inline": False}
         ],
-        # 👇 加入 UAT 時光機 Footnote
         "footer": {"text": f"V1 Quant Master (UAT 測試) | 時光機回溯 {SIMULATE_DAYS_AGO} 日"}
     }
     try: 
@@ -193,35 +202,32 @@ def build_dynamic_watchlist():
         add_to_map(sp500_fallback, "S&P500")
         print(f"  ✅ 成功載入 S&P 500 後備名單 (共 {len(sp500_fallback)} 隻)")
         
+# ---------------------------------------------------------
+    # 2. 獲取美股異動黑馬 (改用 Yahoo Finance US 避開 Cloudflare)
     # ---------------------------------------------------------
-    # 2. 獲取 Finviz 異動股 (Unusual Volume & Top Gainers)
-    # ---------------------------------------------------------
-    finviz_urls = [
-        ("https://finviz.com/screener.ashx?v=111&s=ta_topgainers", "Finviz升幅"),
-        ("https://finviz.com/screener.ashx?v=111&s=ta_unusualvolume", "Finviz異動")
+    yahoo_us_urls = [
+        ("https://finance.yahoo.com/gainers", "Yahoo升幅"),
+        ("https://finance.yahoo.com/most-active", "Yahoo異動")
     ]
-    for url, label in finviz_urls:
+    for url, label in yahoo_us_urls:
         try:
-            # 💡 破解 1：放棄 random UA，改用寫死嘅「最標準現代 Chrome」面具，並加入 Accept 欺騙防火牆
             headers = {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
                 'Accept-Language': 'en-US,en;q=0.5'
             }
             res = requests.get(url, headers=headers, timeout=10)
             
             if res.status_code == 200:
                 import re
-                # 💡 破解 2：無視 DataFrame 表格，直接暴力抽取 href="quote.ashx?t=AAPL" 裡面的代號
-                matches = re.findall(r'quote\.ashx\?t=([A-Z]+)', res.text)
-                
+                # 抽取 Yahoo US 的 href="/quote/AAPL" 結構
+                matches = re.findall(r'href="/quote/([A-Z]+)"', res.text)
                 if matches:
-                    # 去除重複，Finviz 首頁通常顯示 20 隻
-                    found = list(dict.fromkeys(matches))
+                    found = list(dict.fromkeys(matches))[:30] # 保留最熱門 30 隻
                     add_to_map(found, label)
                     print(f"  🔥 成功捕捉到 {label}: {len(found)} 隻")
                 else:
-                    print(f"  ⚠️ {label} 抓取略過: 找不到代號 (可能被 Cloudflare 阻擋)")
+                    print(f"  ⚠️ {label} 抓取略過: 找不到代號")
             else:
                 print(f"  ⚠️ {label} 抓取略過: HTTP {res.status_code}")
         except Exception as e:
@@ -307,20 +313,22 @@ def build_dynamic_watchlist():
             # 執行合併
         add_to_map(nk225_tickers, "NK225")
 
-    # B. 捕捉 JP Trending (全新 HTML 正則破解版)
+    # ---------------------------------------------------------
+    # 3B. 捕捉 JP Trending (修復 404 網址改版問題)
+    # ---------------------------------------------------------
     try:
-        # 💡 直接訪問 Yahoo Japan 的實時成交量排行榜 (最能反映當日熱錢流向)
-        jp_trending_url = "https://finance.yahoo.co.jp/ranking/volume" 
-        headers = {'User-Agent': ua.random}
+        # 💡 更新為最新的 Yahoo JP 排行榜網址
+        jp_trending_url = "https://finance.yahoo.co.jp/stocks/ranking/volume" 
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        }
         res_jp = requests.get(jp_trending_url, headers=headers, timeout=10)
         
         if res_jp.status_code == 200:
             import re
-            # Yahoo JP 的股票連結格式為 /quote/7203.T，我們直接用 Regex 暴力提取！
             matches = re.findall(r'/quote/(\d{4}\.T)', res_jp.text)
             
             if matches:
-                # 移除重複項目，並保留最熱門的前 30 隻黑馬
                 jp_trending = list(dict.fromkeys(matches))[:30]
                 add_to_map(jp_trending, "JP熱門")
                 print(f"  🔥 成功捕捉到日股當日熱錢焦點 (Yahoo JP): {len(jp_trending)} 隻")
@@ -873,8 +881,13 @@ for ticker in valid_tickers:
             target_r = 1.5 
             tp1_price = round(cp + (risk_per_share * target_r), 2)
             
-            swing_results.append({'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name})
-            
+            swing_results.append({
+                'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 
+                'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name,
+                'has_mss': is_mss, 'has_smc': is_institutional_ob, 
+                'has_amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
+            })
+
             trade_info = {
                 'date': today_str, 'tk': ticker, 'px': round(cp, 2), 
                 'sl': sl_p, 'tp': tp_p, 'initial_sl': sl_p, 'tp1_price': tp1_price,
@@ -912,8 +925,13 @@ for ticker in valid_tickers:
             # 動能爆發，強制要求 TP1 達到 1.5R，修復 EV (數學期望值)！
             tp1_price = round(cp + (risk_per_share * 1.5), 2)
             
-            short_term_results.append({'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name})
-            
+            short_term_results.append({
+                'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 
+                'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name,
+                'has_mss': is_mss, 'has_smc': is_institutional_ob, 
+                'has_amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
+            })
+
             trade_info = {
                 'date': today_str, 'tk': ticker, 'px': round(cp, 2), 
                 'sl': sl_p, 'tp': tp_p, 'initial_sl': sl_p, 'tp1_price': tp1_price,
@@ -936,8 +954,13 @@ for ticker in valid_tickers:
             # 搶反彈見好就收，保留 1R 觸發 TP1，保本最重要！
             tp1_price = round(cp + (risk_per_share * 1.0), 2)
             
-            short_term_results.append({'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name})
-            
+            short_term_results.append({
+                'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 
+                'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name,
+                'has_mss': is_mss, 'has_smc': is_institutional_ob, 
+                'has_amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
+            })
+
             trade_info = {
                 'date': today_str, 'tk': ticker, 'px': round(cp, 2), 
                 'sl': sl_p, 'tp': tp_p, 'initial_sl': sl_p, 'tp1_price': tp1_price,
@@ -949,25 +972,30 @@ for ticker in valid_tickers:
             ticker_sources = TICKER_MAP.get(ticker, [])
             s_info = get_stock_info(ticker) 
             
+            # 👇 計算分數
+            feature_score = int(is_mss) + int(is_institutional_ob) + int(is_amd_manipulation)
+            
             trade_info['sources'] = ticker_sources
             trade_info['sector'] = s_info['sector']
             trade_info['mcap'] = s_info['mcap']
-            # 👇 寫入高階量化標籤供 Dashboard 渲染
+            trade_info['feature_score'] = feature_score
             trade_info['features'] = {
                 'mss': is_mss, 'smc': is_institutional_ob,
                 'amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
             }
 
-            # 💡 判斷呢隻股票係美股定日股，分配對應嘅 4 象限顏色
             current_ticker_color = jp_macro_color if is_jp else us_macro_color
-            send_discord_alert(ticker, tag_name, round(cp, 2), sl_p, tp_p, current_ticker_color, ticker_sources, tp1_price=tp1_price)
+            
+            # 👇 將 features 傳畀 Discord
+            send_discord_alert(ticker, tag_name, round(cp, 2), sl_p, tp_p, current_ticker_color, ticker_sources, tp1_price=tp1_price, features=trade_info['features'])
             
             if not any(t.get('tk') == ticker and t.get('status') == 'OPEN' for t in trade_history):
                  trade_history.append(trade_info)
             
             js_payload.append({
                 "ticker": ticker, "tag": tag_name, "curr_price": round(cp, 2), 
-                "sl_price": sl_p, "tp_price": tp_p, "risk_per_share": risk_per_share
+                "sl_price": sl_p, "tp_price": tp_p, "risk_per_share": risk_per_share,
+                "feature_score": feature_score
             })
 
     except Exception as e:
@@ -1579,6 +1607,13 @@ html = f"""<!DOCTYPE html>
                             <span>RS: {d['rs']} (<span class="{ 'text-emerald-400' if d['mom']>0 else 'text-red-400'}">{'+' if d['mom']>0 else ''}{d['mom']}</span>)</span>
                             <span class="font-bold text-white">現價: {get_unit(d['tk'])}{d['px']}</span>
                         </div>
+                        <!-- 👇 特徵標籤 👇 -->
+                        <div class="flex flex-wrap items-center gap-1 mt-1.5">
+                            {'<span class="text-[8px] bg-purple-500/20 text-purple-300 px-1 rounded border border-purple-500/30">🛡️ MSS</span>' if d.get('has_mss') else ''}
+                            {'<span class="text-[8px] bg-sky-500/20 text-sky-300 px-1 rounded border border-sky-500/30">🐋 SMC</span>' if d.get('has_smc') else ''}
+                            {'<span class="text-[8px] bg-orange-500/20 text-orange-300 px-1 rounded border border-orange-500/30">🔄 AMD</span>' if d.get('has_amd') else ''}
+                            <span class="text-[8px] bg-slate-700/50 text-slate-300 px-1 rounded border border-slate-600">🧠 {d.get('ml_rsi')}</span>
+                        </div>
                         <div class="flex justify-between text-[9px] mt-1.5 pt-1.5 border-t border-slate-700/50">
                             <span class="text-emerald-400 font-mono">🎯 TP: {get_unit(d['tk'])}{d['tp']} (+{((d['tp']-d['px'])/d['px']*100):.1f}%)</span>
                             <span class="text-red-400 font-mono">🛑 SL: {get_unit(d['tk'])}{d['sl']} ({((d['sl']-d['px'])/d['px']*100):.1f}%)</span>
@@ -1596,6 +1631,13 @@ html = f"""<!DOCTYPE html>
                         <div class="flex justify-between text-[10px] text-slate-400 mt-1">
                             <span>RS: {d['rs']}</span>
                             <span class="font-bold text-white">現價: {get_unit(d['tk'])}{d['px']}</span>
+                        </div>
+                        <!-- 👇 特徵標籤 👇 -->
+                        <div class="flex flex-wrap items-center gap-1 mt-1.5">
+                            {'<span class="text-[8px] bg-purple-500/20 text-purple-300 px-1 rounded border border-purple-500/30">🛡️ MSS</span>' if d.get('has_mss') else ''}
+                            {'<span class="text-[8px] bg-sky-500/20 text-sky-300 px-1 rounded border border-sky-500/30">🐋 SMC</span>' if d.get('has_smc') else ''}
+                            {'<span class="text-[8px] bg-orange-500/20 text-orange-300 px-1 rounded border border-orange-500/30">🔄 AMD</span>' if d.get('has_amd') else ''}
+                            <span class="text-[8px] bg-slate-700/50 text-slate-300 px-1 rounded border border-slate-600">🧠 {d.get('ml_rsi')}</span>
                         </div>
                         <div class="flex justify-between text-[9px] mt-1.5 pt-1.5 border-t border-slate-700/50">
                             <span class="text-emerald-400 font-mono">🎯 TP: {get_unit(d['tk'])}{d['tp']} (+{((d['tp']-d['px'])/d['px']*100):.1f}%)</span>
@@ -1742,6 +1784,26 @@ html = f"""<!DOCTYPE html>
                             <tbody id="metric-rsi-tbody"></tbody>
                         </table>
                     </div>
+                </div>
+            </div>
+            <!-- 👇 新增：獨立特徵因子分析表 (Feature Factor Matrix) 👇 -->
+            <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-4 mt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-black text-pink-400 flex items-center gap-2">🧬 獨立特徵因子勝率分析 (Feature Matrix)</h3>
+                    <div class="text-[10px] text-slate-500">找出不同策略最依賴的核心推動力</div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left whitespace-nowrap">
+                        <thead class="text-slate-500 uppercase border-b border-slate-700 bg-slate-800/50">
+                            <tr>
+                                <th class="p-2 w-1/4">策略 (Strategy)</th>
+                                <th class="p-2 text-center text-purple-300 w-1/4 border-l border-slate-700/50">🛡️ MSS (結構轉變)</th>
+                                <th class="p-2 text-center text-sky-300 w-1/4 border-l border-slate-700/50">🐋 SMC (大戶訂單)</th>
+                                <th class="p-2 text-center text-orange-300 w-1/4 border-l border-slate-700/50">🔄 AMD (洗盤完成)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metric-features-tbody"></tbody>
+                    </table>
                 </div>
             </div>
         </div>
@@ -2331,6 +2393,60 @@ function renderThemesTab() {{
             const rsiTbody = document.getElementById('metric-rsi-tbody');
             if(rsTbody) rsTbody.innerHTML = renderMetricRows(metricStats.rs);
             if(rsiTbody) rsiTbody.innerHTML = renderMetricRows(metricStats.rsi);
+
+            // ==========================================
+            // 🧬 獨立特徵因子分析 (Feature Matrix) 計算
+            // ==========================================
+            const featureStats = {{}};
+            const ALL_STRATS = ["🏆 VCP 突破", "💥 BB 擠壓", "⚡ 缺口動能", "📉 極度超賣"];
+            
+            ALL_STRATS.forEach(s => {{
+                featureStats[s] = {{
+                    'mss': {{ t: 0, w: 0, pnl: 0 }},
+                    'smc': {{ t: 0, w: 0, pnl: 0 }},
+                    'amd': {{ t: 0, w: 0, pnl: 0 }}
+                }};
+            }});
+
+            closeds.forEach(t => {{
+                const strat = t.tag;
+                if (!strat || !featureStats[strat]) return;
+                
+                const isWin = t.status.includes('✅');
+                const tradePnl = (10000 / t.px) * (t.last_px - t.px);
+                
+                if (t.features) {{
+                    if (t.features.mss) {{ featureStats[strat].mss.t++; if(isWin) featureStats[strat].mss.w++; featureStats[strat].mss.pnl += tradePnl; }}
+                    if (t.features.smc) {{ featureStats[strat].smc.t++; if(isWin) featureStats[strat].smc.w++; featureStats[strat].smc.pnl += tradePnl; }}
+                    if (t.features.amd) {{ featureStats[strat].amd.t++; if(isWin) featureStats[strat].amd.w++; featureStats[strat].amd.pnl += tradePnl; }}
+                }}
+            }});
+
+            const formatFeatureCell = (stat) => {{
+                if (stat.t === 0) return `<td class="p-2 text-center text-slate-600 text-[10px] border-l border-slate-700/50">無數據</td>`;
+                const winRate = ((stat.w / stat.t) * 100).toFixed(1);
+                const pColor = stat.pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
+                const pSign = stat.pnl >= 0 ? '+' : '';
+                return `
+                    <td class="p-2 text-center border-l border-slate-700/50 hover:bg-slate-700/30 transition">
+                        <div class="font-black text-white text-sm mb-0.5">${{winRate}}%</div>
+                        <div class="text-[9px] text-slate-400 mb-1">${{stat.w}} 贏 / ${{stat.t}} 單</div>
+                        <div class="font-black font-mono ${{pColor}} text-[10px] bg-slate-900/50 inline-block px-2 py-0.5 rounded">${{pSign}}$${{stat.pnl.toFixed(0)}}</div>
+                    </td>
+                `;
+            }};
+
+            const featuresTbody = document.getElementById('metric-features-tbody');
+            if (featuresTbody) {{
+                featuresTbody.innerHTML = ALL_STRATS.map(strat => `
+                    <tr class="border-b border-slate-700/50 hover:bg-slate-800 transition">
+                        <td class="p-2 font-bold text-white bg-slate-900/20">${{strat}}</td>
+                        ${{formatFeatureCell(featureStats[strat].mss)}}
+                        ${{formatFeatureCell(featureStats[strat].smc)}}
+                        ${{formatFeatureCell(featureStats[strat].amd)}}
+                    </tr>
+                `).join('');
+            }}
 
             // ==========================================
             // 📂 3. 渲染 Open Positions (加入過濾/排序/板塊/市值/75%)
