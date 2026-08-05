@@ -3,15 +3,15 @@
         "date": "2026-08-03",
         "tk": "5332.T",
         "px": 6171.0,
-        "sl": 5725.29,
+        "sl": 6171.0,
         "tp": 7508.14,
         "initial_sl": 5725.29,
         "tp1_price": 6616.71,
-        "last_px": 6295.0,
+        "last_px": 6644.0,
         "status": "OPEN",
         "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
         "entry_metric": "RSI: 17",
-        "curr_metric": "RSI: 21",
+        "curr_metric": "RSI: 31",
         "sources": [
             "TOPIX_Mid400_\u4e2d\u578b"
         ],
@@ -23,6 +23,6 @@
             "amd": false,
             "ml_rsi": 17.6
         },
-        "partial_tp_hit": false
+        "partial_tp_hit": true
     }
 ]
