@@ -577,6 +577,10 @@ current_highs = highs.iloc[-1].to_dict()   # 引入全日最高價
 current_lows = lows.iloc[-1].to_dict()     # 引入全日最低價
 dict_low20 = lows.rolling(20).min().iloc[-1].to_dict()
 dict_low5 = lows.rolling(5).min().iloc[-1].to_dict()
+
+# 👇 新增：預先計算 SMA20 供超賣時間止損使用
+dict_sma20_stop = closes.rolling(20).mean().iloc[-1].to_dict()
+
 closed_this_run = []
 
 for trade in trade_history:
@@ -590,9 +594,32 @@ for trade in trade_history:
             strat_tag = trade.get('tag', '')
             trade['last_px'] = now_px
             
+            # 👇 新增：累加持倉日數 (Days Held)
+            days_held = trade.get('days_held', 0) + 1
+            trade['days_held'] = days_held
+            
             if now_px > buy_px * 10 or now_px < buy_px * 0.1: continue
             if 'partial_tp_hit' not in trade: trade['partial_tp_hit'] = False
             if 'initial_sl' not in trade: trade['initial_sl'] = trade['sl']
+            
+            # ==========================================
+            # 🛡️ 方案一：極度超賣專屬風險管理 (硬性斬倉)
+            # ==========================================
+            if "超賣" in strat_tag:
+                # ❌ 條件 A：絕對金額止損 (Hard SL) - 跌穿買入價 5% 無條件投降
+                if now_px < (buy_px * 0.95):
+                    trade['last_px'] = now_px
+                    trade['status'], trade['close_date'] = '❌ 觸發 5% 絕對止損', today_str
+                    closed_this_run.append(trade)
+                    continue
+                    
+                # ❌ 條件 B：時間止損 (Time Stop) - 撈底後 3 日內無反彈且處於 20 天線下方
+                current_ma20 = dict_sma20_stop.get(tk, buy_px)
+                if days_held >= 3 and now_px < current_ma20:
+                    trade['last_px'] = now_px
+                    trade['status'], trade['close_date'] = '❌ 觸發 3 日時間止損', today_str
+                    closed_this_run.append(trade)
+                    continue
             
             initial_risk = buy_px - trade['initial_sl']
             is_short_term = ('缺口' in strat_tag or '超賣' in strat_tag)
@@ -812,13 +839,21 @@ for ticker in valid_tickers:
         closing_strength = (cp - l_val) / full_range if full_range > 0 else 0
 
         # =================================================================
+        # 🎯 方案二：設定「雙重共振」質量過濾器 (Quality Filter)
+        # =================================================================
+        # 強制要求動能 (Momentum) 大於 2，且當日成交量必須是 20日平均的 1.5 倍以上
+        quality_filter_passed = (rs_mom > 2) and (c_vol > v_ma20 * 1.5)
+
+        # =================================================================
         # 📈 策略 1：波段建倉 (VCP 突破 / BB 擠壓) 
         # 結合 AlphaTrend, SMC 訂單塊, AMD 洗盤, VWAP 機構護航
         # =================================================================
         is_uptrend = (cp > sma50) and (sma50 > sma200)
         is_near_high = ((high120 - cp) / high120) <= 0.15
         is_tight = (v_base_dd <= 0.35) and (v_rec_vol <= 0.12)
-        is_breaking_out = (cp > resist_10d) and (c_vol > v_ma20 * 1.2)
+        
+        # 💡 升級：VCP 突破必須綁定「雙重共振」
+        is_breaking_out = (cp > resist_10d) and quality_filter_passed
         
         is_alpha_trend = (rsi_val > 50) and (cp > (sma20 + 0.5 * catr))
         is_institutional_ob = current_body_size > (1.5 * avg_body_size)
@@ -826,8 +861,10 @@ for ticker in valid_tickers:
         is_above_vwap = cp > vwap20
 
         is_vcp = is_uptrend and is_near_high and is_tight and is_breaking_out and is_solid_candle and is_alpha_trend and is_institutional_ob and is_amd_manipulation and (not is_cpi_eve) and is_above_vwap
-        is_bb_sqz = (dict_bb_width.get(ticker) <= dict_bb_width_min120.get(ticker) * 1.1) and is_uptrend and is_alpha_trend and (not is_cpi_eve) and is_above_vwap
-
+        
+        # 💡 升級：BB 擠壓強制綁定「雙重共振」，過濾平庸的波動
+        is_bb_sqz = (dict_bb_width.get(ticker) <= dict_bb_width_min120.get(ticker) * 1.1) and is_uptrend and is_alpha_trend and (not is_cpi_eve) and is_above_vwap and quality_filter_passed
+        
         # =================================================================
         # 📉 策略 2：短線游擊 (缺口動能 / 極度超賣)
         # 結合 ML-RSI, MSS 結構轉變, 恐慌極值, 巨鯨吸收率
