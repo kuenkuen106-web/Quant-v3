@@ -1337,24 +1337,33 @@ def get_unit(tk): return "¥" if tk.endswith(".T") else "$"
 print("⏳ 正在生成歷史宏觀走勢圖表數據...")
 hist_dates = closes.index[-400:]
 
-# 🛡️ 核心修正：利用 ffill() 解決歷史走勢圖休市變 0 的問題
+# 1. 🛡️ 強制全局 ffill()，填補美日假期交錯導致的 NaN 漏洞
 c_us_valid = closes[us_tickers].ffill()
 c_us_idx_valid = closes[us_index_tickers].ffill()
-v_us_tot50 = (c_us_valid > c_us_valid.rolling(50, min_periods=25).mean()).sum(axis=1) / max(1, len(us_tickers)) * 100
-v_us_idx50 = (c_us_idx_valid > c_us_idx_valid.rolling(50, min_periods=25).mean()).sum(axis=1) / max(1, len(us_index_tickers)) * 100
-v_us_idx200 = (c_us_idx_valid > c_us_idx_valid.rolling(200, min_periods=100).mean()).sum(axis=1) / max(1, len(us_index_tickers)) * 100
-
 c_jp_valid = closes[jp_tickers].ffill()
 c_jp_idx_valid = closes[jp_index_tickers].ffill()
-v_jp_tot50 = (c_jp_valid > c_jp_valid.rolling(50, min_periods=25).mean()).sum(axis=1) / max(1, len(jp_tickers)) * 100
-v_jp_idx50 = (c_jp_idx_valid > c_jp_idx_valid.rolling(50, min_periods=25).mean()).sum(axis=1) / max(1, len(jp_index_tickers)) * 100
-v_jp_idx200 = (c_jp_idx_valid > c_jp_idx_valid.rolling(200, min_periods=100).mean()).sum(axis=1) / max(1, len(jp_index_tickers)) * 100
 
-# 向量化計算歷史派發日
-us_dist_mask = (closes['SPY'].pct_change() < -0.002) & (vols['SPY'] > vols['SPY'].shift(1))
-us_hist_dist = us_dist_mask.rolling(25).sum()
-jp_dist_mask = (closes['^N225'].pct_change() < -0.002) & (vols['^N225'] > vols['^N225'].shift(1))
-jp_hist_dist = jp_dist_mask.rolling(25).sum()
+spy_c = closes['SPY'].ffill() if 'SPY' in closes.columns else None
+spy_200 = spy_c.rolling(200, min_periods=100).mean().ffill() if spy_c is not None else None
+
+n225_c = closes['^N225'].ffill() if '^N225' in closes.columns else None
+n225_200 = n225_c.rolling(200, min_periods=100).mean().ffill() if n225_c is not None else None
+
+# 2. 🛡️ 智能市寬函數 (處理分母，防 0 防 NaN)
+def get_hist_breadth(price_df, ma_window, min_periods):
+    ma_df = price_df.rolling(ma_window, min_periods=min_periods).mean().ffill()
+    valid_counts = ma_df.notna().sum(axis=1).replace(0, 1) # 避免除以 0
+    return (price_df > ma_df).sum(axis=1) / valid_counts * 100
+
+v_us_tot20 = get_hist_breadth(c_us_valid, 20, 10)
+v_us_tot50 = get_hist_breadth(c_us_valid, 50, 25)
+v_us_idx50 = get_hist_breadth(c_us_idx_valid, 50, 25)
+v_us_idx200 = get_hist_breadth(c_us_idx_valid, 200, 100)
+
+v_jp_tot20 = get_hist_breadth(c_jp_valid, 20, 10)
+v_jp_tot50 = get_hist_breadth(c_jp_valid, 50, 25)
+v_jp_idx50 = get_hist_breadth(c_jp_idx_valid, 50, 25)
+v_jp_idx200 = get_hist_breadth(c_jp_idx_valid, 200, 100)
 
 chart_data = []
 for i, d in enumerate(hist_dates):
@@ -1363,8 +1372,6 @@ for i, d in enumerate(hist_dates):
     jp_open_profit, jp_open_loss = 0, 0
     
     strat_counts = {"VCP": 0, "BB": 0, "GAP": 0, "OVERSOLD": 0}
-    
-    # 🌟 新增：用來記錄截至當日的累積利潤 (Cumulative P&L)
     cum_pnl = {"VCP": 0, "BB": 0, "GAP": 0, "OVERSOLD": 0}
         
     d_prices = closes.loc[d]
@@ -1391,7 +1398,7 @@ for i, d in enumerate(hist_dates):
                     elif '缺口' in tag: strat_counts['GAP'] += 1
                     elif '超賣' in tag: strat_counts['OVERSOLD'] += 1
             
-            # 2. 🌟 新增：計算累積 P&L (只計當日或之前已經結案的單)
+            # 2. 計算累積 P&L (只計當日或之前已經結案的單)
             if c_date <= d_str and ('✅' in t.get('status', '') or '❌' in t.get('status', '')):
                 pnl = (10000 / t['px']) * (t['last_px'] - t['px'])
                 tag = t.get('tag', '')
@@ -1400,14 +1407,20 @@ for i, d in enumerate(hist_dates):
                 elif '缺口' in tag: cum_pnl['GAP'] += pnl
                 elif '超賣' in tag: cum_pnl['OVERSOLD'] += pnl
 
-    # 判斷歷史燈號顏色 (保留你原本的邏輯)
-    us_c_color = "#22c55e" 
-    if closes['SPY'].loc[d] < closes['SPY'].rolling(200).mean().loc[d] or v_us_idx200.loc[d] < 30 or us_hist_dist.loc[d] >= 6: us_c_color = "#ef4444"
-    elif (v_us_idx50.loc[d] > 50 and v_us_tot50.loc[d] < 30) or v_us_idx50.loc[d] < 40 or us_hist_dist.loc[d] >= 4: us_c_color = "#eab308"
-        
-    jp_c_color = "#22c55e"
-    if closes['^N225'].loc[d] < closes['^N225'].rolling(200).mean().loc[d] or v_jp_idx200.loc[d] < 30 or jp_hist_dist.loc[d] >= 6: jp_c_color = "#ef4444"
-    elif (v_jp_idx50.loc[d] > 50 and v_jp_tot50.loc[d] < 30) or v_jp_idx50.loc[d] < 40 or jp_hist_dist.loc[d] >= 4: jp_c_color = "#eab308"
+    # 3. 🌟 徹底對齊 4 色燈宏觀邏輯 (Bull, Mild Bull, Mild Bear, Bear)
+    us_c_color = "#22c55e" # 預設綠燈
+    if spy_c is not None and spy_200 is not None and d in spy_c.index:
+        if spy_c.loc[d] > spy_200.loc[d]:
+            us_c_color = "#22c55e" if v_us_idx50.loc[d] > 60 else "#eab308" # 綠 或 黃
+        else:
+            us_c_color = "#f97316" if v_us_tot20.loc[d] > 20 else "#ef4444" # 橙 或 紅
+
+    jp_c_color = "#22c55e" # 預設綠燈
+    if n225_c is not None and n225_200 is not None and d in n225_c.index:
+        if n225_c.loc[d] > n225_200.loc[d]:
+            jp_c_color = "#22c55e" if v_jp_idx50.loc[d] > 60 else "#eab308" # 綠 或 黃
+        else:
+            jp_c_color = "#f97316" if v_jp_tot20.loc[d] > 20 else "#ef4444" # 橙 或 紅
         
     chart_data.append({
         'date': d_str,
@@ -1419,7 +1432,6 @@ for i, d in enumerate(hist_dates):
         'strat_vcp': strat_counts['VCP'], 'strat_bb': strat_counts['BB'],
         'strat_gap': strat_counts['GAP'], 'strat_oversold': strat_counts['OVERSOLD'],
         
-        # 🌟 新增：匯出累積 P&L 數據
         'pnl_vcp': round(cum_pnl['VCP'], 2),
         'pnl_bb': round(cum_pnl['BB'], 2),
         'pnl_gap': round(cum_pnl['GAP'], 2),
@@ -1803,6 +1815,27 @@ html = f"""<!DOCTYPE html>
                             </tr>
                         </thead>
                         <tbody id="metric-features-tbody"></tbody>
+                    </table>
+                </div>
+            </div>
+            <!-- 👇 新增：特定指標組合勝率分析 (Combination Matrix) 👇 -->
+            <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-4 mt-4">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="font-black text-amber-400 flex items-center gap-2">🔥 特定指標組合勝率分析 (Combination Matrix)</h3>
+                    <div class="text-[10px] text-slate-500">尋找每種策略的「最佳拍檔」組合（已排除單一指標）</div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-xs text-left whitespace-nowrap">
+                        <thead class="text-slate-500 uppercase border-b border-slate-700 bg-slate-800/50">
+                            <tr>
+                                <th class="p-2 w-1/5">策略 (Strategy)</th>
+                                <th class="p-2 text-center w-1/5 border-l border-slate-700/50">🛡️+🐋 MSS + SMC</th>
+                                <th class="p-2 text-center w-1/5 border-l border-slate-700/50">🛡️+🔄 MSS + AMD</th>
+                                <th class="p-2 text-center w-1/5 border-l border-slate-700/50">🐋+🔄 SMC + AMD</th>
+                                <th class="p-2 text-center text-amber-300 w-1/5 border-l border-slate-700/50">S級三核共振 (All 3)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="metric-combination-tbody"></tbody>
                     </table>
                 </div>
             </div>
@@ -2251,13 +2284,36 @@ function renderThemesTab() {{
             const closeds = filteredHist.filter(t => t.status !== 'OPEN');
 
             // ==========================================
-            // 📊 頂部 4 個總計數據方塊 (已經升級 75/25 會計)
+            // 📊 頂部 4 個總計方塊 & 🎯 機構級核心 KPI
             // ==========================================
             let totalClosedPnl = 0, wins = 0, totalOpenPnl = 0;
             
-            closeds.forEach(t => {{
-                totalClosedPnl += (10000 / t.px) * (t.last_px - t.px);
+            // --- 新增：核心 KPI 變數 ---
+            let grossProfit = 0, grossLoss = 0;
+            let cumulativePnl = 0, peakCapital = 0, maxDrawdown = 0;
+            
+            // 為了準確計算最大回撤 (MDD)，必須建立一個按時間順序排列的陣列
+            let chronologicalCloseds = [...closeds].sort((a, b) => {{
+                let dateA = a.close_date || a.date;
+                let dateB = b.close_date || b.date;
+                return dateA.localeCompare(dateB);
+            }});
+
+            chronologicalCloseds.forEach(t => {{
+                let tradePnl = (10000 / t.px) * (t.last_px - t.px);
+                totalClosedPnl += tradePnl;
+                
                 if (t.status.includes('✅')) wins++;
+
+                // 計算 Profit Factor 元素
+                if (tradePnl > 0) grossProfit += tradePnl;
+                else grossLoss += Math.abs(tradePnl);
+
+                // 計算 Max Drawdown
+                cumulativePnl += tradePnl;
+                if (cumulativePnl > peakCapital) peakCapital = cumulativePnl;
+                let drawdown = peakCapital - cumulativePnl;
+                if (drawdown > maxDrawdown) maxDrawdown = drawdown;
             }});
             
             opens.forEach(t => {{
@@ -2271,8 +2327,18 @@ function renderThemesTab() {{
                 totalOpenPnl += pnl;
             }});
 
-            const winRate = closeds.length > 0 ? ((wins / closeds.length) * 100).toFixed(1) : 0;
-            const closedPct = closeds.length > 0 ? ((totalClosedPnl / (closeds.length * 10000)) * 100).toFixed(2) : "0.00";
+            // --- 計算 KPI 最終數值 ---
+            const totalClosedCount = closeds.length;
+            const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : "999.99";
+            const winRateDec = totalClosedCount > 0 ? (wins / totalClosedCount) : 0;
+            const lossRateDec = 1 - winRateDec;
+            const avgWin = wins > 0 ? (grossProfit / wins) : 0;
+            const avgLoss = (totalClosedCount - wins) > 0 ? (grossLoss / (totalClosedCount - wins)) : 0;
+            const expectancy = ((winRateDec * avgWin) - (lossRateDec * avgLoss)).toFixed(2);
+
+            // --- 渲染原本的 4 個舊方塊 ---
+            const winRate = totalClosedCount > 0 ? (winRateDec * 100).toFixed(1) : 0;
+            const closedPct = totalClosedCount > 0 ? ((totalClosedPnl / (totalClosedCount * 10000)) * 100).toFixed(2) : "0.00";
             const openPct = opens.length > 0 ? ((totalOpenPnl / (opens.length * 10000)) * 100).toFixed(2) : "0.00";
 
             const closedSign = totalClosedPnl >= 0 ? '+' : '';
@@ -2288,7 +2354,7 @@ function renderThemesTab() {{
                 <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
                     <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">歷史勝率</div>
                     <div class="text-2xl font-black text-white">${{winRate}}%</div>
-                    <div class="text-[9px] text-slate-500 mt-1">${{wins}} 贏 / ${{closeds.length - wins}} 輸</div>
+                    <div class="text-[9px] text-slate-500 mt-1">${{wins}} 贏 / ${{totalClosedCount - wins}} 輸</div>
                 </div>
                 <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
                     <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">目前未平倉</div>
@@ -2299,6 +2365,35 @@ function renderThemesTab() {{
                     <div class="text-2xl font-black ${{openColor}}">${{openSign}}$${{totalOpenPnl.toFixed(0)}} <span class="text-sm">(${{openSign}}${{openPct}}%)</span></div>
                 </div>
             `;
+
+            // --- 渲染新增的 3 個 KPI 方塊 ---
+            const kpiContainer = document.getElementById('kpi-scorecard');
+            if (kpiContainer) {{
+                const pfColor = profitFactor >= 2 ? 'text-fuchsia-400' : (profitFactor >= 1.5 ? 'text-emerald-400' : 'text-amber-400');
+                const expColor = expectancy > 150 ? 'text-emerald-400' : 'text-amber-400';
+                const mddColor = maxDrawdown < 15000 ? 'text-emerald-400' : 'text-red-400';
+
+                kpiContainer.innerHTML = `
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 relative overflow-hidden shadow-lg">
+                        <div class="absolute -right-4 -top-4 opacity-10 text-6xl">⚖️</div>
+                        <div class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">獲利因子 (Profit Factor)</div>
+                        <div class="text-3xl font-black ${{pfColor}}">${{profitFactor}} <span class="text-sm font-bold text-slate-500">x</span></div>
+                        <div class="text-[10px] text-slate-500 mt-2 font-bold">總利潤 ÷ 總虧損。量度系統的純粹攻擊力。</div>
+                    </div>
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 relative overflow-hidden shadow-lg">
+                        <div class="absolute -right-4 -top-4 opacity-10 text-6xl">🎯</div>
+                        <div class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">數學期望值 (Expectancy)</div>
+                        <div class="text-3xl font-black ${{expColor}}">+$${{expectancy}} <span class="text-sm font-bold text-slate-500">/ 單</span></div>
+                        <div class="text-[10px] text-slate-500 mt-2 font-bold">每進行一次交易，預期帶來的淨利。</div>
+                    </div>
+                    <div class="bg-slate-800/50 p-5 rounded-xl border border-slate-700 relative overflow-hidden shadow-lg">
+                        <div class="absolute -right-4 -top-4 opacity-10 text-6xl">🛡️</div>
+                        <div class="text-[10px] text-slate-400 uppercase font-black tracking-widest mb-1">最大回撤 (Max Drawdown)</div>
+                        <div class="text-3xl font-black ${{mddColor}}">-$${{maxDrawdown.toFixed(0)}}</div>
+                        <div class="text-[10px] text-slate-500 mt-2 font-bold">歷史上遭遇過最嚴重的資金滑落。</div>
+                    </div>
+                `;
+            }}
 
             // ==========================================
             // 🎯 1. 生成策略卡片
@@ -2444,6 +2539,67 @@ function renderThemesTab() {{
                         ${{formatFeatureCell(featureStats[strat].mss)}}
                         ${{formatFeatureCell(featureStats[strat].smc)}}
                         ${{formatFeatureCell(featureStats[strat].amd)}}
+                    </tr>
+                `).join('');
+            }}
+
+            // ==========================================
+            // 🔥 特定指標組合 (Combination Matrix) 計算
+            // ==========================================
+            const comboStats = {{}};
+            
+            ALL_STRATS.forEach(s => {{
+                comboStats[s] = {{
+                    'mss_smc': {{ t: 0, w: 0, pnl: 0 }}, // 只中 MSS + SMC
+                    'mss_amd': {{ t: 0, w: 0, pnl: 0 }}, // 只中 MSS + AMD
+                    'smc_amd': {{ t: 0, w: 0, pnl: 0 }}, // 只中 SMC + AMD
+                    'all_3': {{ t: 0, w: 0, pnl: 0 }}    // 3個全中
+                }};
+            }});
+
+            closeds.forEach(t => {{
+                const strat = t.tag;
+                if (!strat || !comboStats[strat]) return;
+                
+                const isWin = t.status.includes('✅');
+                const tradePnl = (10000 / t.px) * (t.last_px - t.px);
+                
+                if (t.features) {{
+                    // 將 Boolean 值轉做 true/false 方便判定
+                    const hasMSS = !!t.features.mss;
+                    const hasSMC = !!t.features.smc;
+                    const hasAMD = !!t.features.amd;
+                    
+                    // 精準將單子分類落對應嘅特定組合 (Mutually Exclusive)
+                    if (hasMSS && hasSMC && hasAMD) {{
+                        comboStats[strat].all_3.t++;
+                        if(isWin) comboStats[strat].all_3.w++;
+                        comboStats[strat].all_3.pnl += tradePnl;
+                    }} else if (hasMSS && hasSMC && !hasAMD) {{
+                        comboStats[strat].mss_smc.t++;
+                        if(isWin) comboStats[strat].mss_smc.w++;
+                        comboStats[strat].mss_smc.pnl += tradePnl;
+                    }} else if (hasMSS && !hasSMC && hasAMD) {{
+                        comboStats[strat].mss_amd.t++;
+                        if(isWin) comboStats[strat].mss_amd.w++;
+                        comboStats[strat].mss_amd.pnl += tradePnl;
+                    }} else if (!hasMSS && hasSMC && hasAMD) {{
+                        comboStats[strat].smc_amd.t++;
+                        if(isWin) comboStats[strat].smc_amd.w++;
+                        comboStats[strat].smc_amd.pnl += tradePnl;
+                    }}
+                }}
+            }});
+
+            const comboTbody = document.getElementById('metric-combination-tbody');
+            if (comboTbody) {{
+                comboTbody.innerHTML = ALL_STRATS.map(strat => `
+                    <tr class="border-b border-slate-700/50 hover:bg-slate-800 transition">
+                        <td class="p-2 font-bold text-white bg-slate-900/20">${{strat}}</td>
+                        ${{formatFeatureCell(comboStats[strat].mss_smc)}}
+                        ${{formatFeatureCell(comboStats[strat].mss_amd)}}
+                        ${{formatFeatureCell(comboStats[strat].smc_amd)}}
+                        ${{formatFeatureCell(comboStats[strat].all_3)}}
                     </tr>
                 `).join('');
             }}
