@@ -832,53 +832,65 @@ for ticker in valid_tickers:
         curr_vavs = dict_vavs.get(ticker, 0)
         vavs_ma = dict_vavs_ma.get(ticker, 0)
 
-        # 🌟 微觀 K 線結構
+        # 🌟 微觀 K 線結構 (收緊：拒絕長上影線的假突破)
         full_range = h_val - l_val
         candle_architecture_score = current_body_size / full_range if full_range > 0 else 0
-        is_solid_candle = candle_architecture_score >= 0.7
         closing_strength = (cp - l_val) / full_range if full_range > 0 else 0
+        is_solid_candle = (candle_architecture_score >= 0.6) and (closing_strength >= 0.75)
 
         # =================================================================
         # 🎯 方案二：設定「雙重共振」質量過濾器 (Quality Filter)
         # =================================================================
-        # 強制要求動能 (Momentum) 大於 2，且當日成交量必須是 20日平均的 1.5 倍以上
         quality_filter_passed = (rs_mom > 2) and (c_vol > v_ma20 * 1.5)
+
+        # 🎯 方案三：動態 VIX 波動率鎖定 (Dynamic Volatility Limit)
+        current_vix = float(vix_c.iloc[-1]) if not pd.isna(vix_c.iloc[-1]) else 15
+        
+        if current_vix < 15: 
+            dynamic_vol_limit = 0.12  # 🟢 平靜牛市：容許正常 VCP 收縮 (12%)
+        elif current_vix < 22: 
+            dynamic_vol_limit = 0.08  # 🟡 震盪市：開始收緊，要求更強的抗跌力 (8%)
+        else: 
+            dynamic_vol_limit = 0.05  # 🔴 恐慌市：極端嚴格！除非大戶鐵壁護盤死寂至 5%，否則絕不進場！
+
+        # 👑 精英制 RS 過濾：順勢突破策略必須是最強的 5% 股票
+        is_elite_rs = rs >= 95
 
         # =================================================================
         # 📈 策略 1：波段建倉 (VCP 突破 / BB 擠壓) 
-        # 結合 AlphaTrend, SMC 訂單塊, AMD 洗盤, VWAP 機構護航
         # =================================================================
         is_uptrend = (cp > sma50) and (sma50 > sma200)
         is_near_high = ((high120 - cp) / high120) <= 0.15
-        is_tight = (v_base_dd <= 0.35) and (v_rec_vol <= 0.12)
+        is_tight = (v_base_dd <= 0.35) and (v_rec_vol <= dynamic_vol_limit)
         
-        # 💡 升級：VCP 突破必須綁定「雙重共振」
         is_breaking_out = (cp > resist_10d) and quality_filter_passed
-        
         is_alpha_trend = (rsi_val > 50) and (cp > (sma20 + 0.5 * catr))
         is_institutional_ob = current_body_size > (1.5 * avg_body_size)
         is_amd_manipulation = (low5_min <= low20_min * 1.01) and (cp > (low5_min + 0.5 * catr))
         is_above_vwap = cp > vwap20
 
-        is_vcp = is_uptrend and is_near_high and is_tight and is_breaking_out and is_solid_candle and is_alpha_trend and is_institutional_ob and is_amd_manipulation and (not is_cpi_eve) and is_above_vwap
+        is_vcp = is_elite_rs and is_uptrend and is_near_high and is_tight and is_breaking_out and is_solid_candle and is_alpha_trend and is_institutional_ob and is_amd_manipulation and (not is_cpi_eve) and is_above_vwap
         
-        # 💡 升級：BB 擠壓強制綁定「雙重共振」，過濾平庸的波動
-        is_bb_sqz = (dict_bb_width.get(ticker) <= dict_bb_width_min120.get(ticker) * 1.1) and is_uptrend and is_alpha_trend and (not is_cpi_eve) and is_above_vwap and quality_filter_passed
-        
+        is_bb_sqz = is_elite_rs and (dict_bb_width.get(ticker) <= dict_bb_width_min120.get(ticker) * 1.1) and is_uptrend and is_alpha_trend and is_solid_candle and (not is_cpi_eve) and is_above_vwap and quality_filter_passed
+
         # =================================================================
         # 📉 策略 2：短線游擊 (缺口動能 / 極度超賣)
-        # 結合 ML-RSI, MSS 結構轉變, 恐慌極值, 巨鯨吸收率
         # =================================================================
         gap_magnitude = (c_op - p_px) / p_px if p_px > 0 else 0
-        is_gap_up = (gap_magnitude >= 0.03) and (c_vol > v_ma20 * 2) and (cp > c_op) and (closing_strength >= 0.6)
+        
+        # ⚡ 缺口動能優化：拒絕 Exhaustion Gap (>15%)，必須是精英 RS，且不應與 SMC (巨鯨實體) 衝突
+        is_gap_up = is_elite_rs and (0.03 <= gap_magnitude <= 0.15) and (c_vol > v_ma20 * 3) and (cp > c_op) and (closing_strength >= 0.8) and is_near_high and (not is_institutional_ob)
         
         dynamic_oversold_threshold = max(18, 30 - (rsi_std * 0.5)) 
         is_ml_oversold = (rsi_val < dynamic_oversold_threshold)
         is_mss = cp > prev_high
         is_volumetric_extreme = c_vol > (v_ma50 * 1.5)
         is_whale_absorption = curr_vavs > (vavs_ma * 2.0)
+        
+        # 💡 極度超賣優化：First Green Day Rule
+        is_first_green_day = (cp > c_op) and (closing_strength >= 0.6)
 
-        is_oversold = is_ml_oversold and (cp < b_lower) and (dma50 < -0.15) and is_volumetric_extreme and (is_mss or is_whale_absorption)
+        is_oversold = is_ml_oversold and (cp < b_lower) and (dma50 < -0.15) and is_volumetric_extreme and is_first_green_day and (is_mss or is_whale_absorption)
 
         # =================================================================
         # ⚖️ 大市四象限過濾與動態止損 (Seasonal & Regime Control)
@@ -1069,6 +1081,17 @@ if trade_history:
 # =============================================================================
 sector_performance = {}
 stealth_hot_stocks = []
+
+# 讀取模擬當日的 VIX 恐慌指數 (防呆預設 15)
+current_vix = float(vix_c.iloc[-1]) if not pd.isna(vix_c.iloc[-1]) else 15.0
+
+# 💡 根據 VIX 動態計算 VCP 的「死寂」波幅上限 (Dynamic Threshold)
+if current_vix < 15:
+    dynamic_vol_limit = 0.08  # 平靜市 (Low VIX)：要求極嚴格，波幅必須 < 8%
+elif current_vix < 22:
+    dynamic_vol_limit = 0.10  # 正常市 (Normal VIX)：標準 10%
+else:
+    dynamic_vol_limit = 0.13  # 恐慌/高波動市 (High VIX)：大盤震盪，放寬至 13%
 
 for ticker in valid_tickers:
     try:
@@ -1370,9 +1393,9 @@ print("⏳ [7/7] 正在生成雙分頁量化儀表板...")
 
 def get_unit(tk): return "¥" if tk.endswith(".T") else "$"
 
-# 👇 新增：準備歷史走勢圖表數據 (最近 400 日)
+# 👇 新增：準備歷史走勢圖表數據 (最近 600 日)
 print("⏳ 正在生成歷史宏觀走勢圖表數據...")
-hist_dates = closes.index[-400:]
+hist_dates = closes.index[-600:]
 
 # 1. 🛡️ 強制全局 ffill()，填補美日假期交錯導致的 NaN 漏洞
 c_us_valid = closes[us_tickers].ffill()
@@ -1746,7 +1769,7 @@ html = f"""<!DOCTYPE html>
 
     <main id="tab-charts" class="hidden flex-1 overflow-y-auto bg-slate-900 rounded-xl border border-slate-800 p-6 z-10 flex flex-col gap-6 shadow-lg">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-            <h2 class="text-2xl font-black text-white flex items-center gap-2">📈 歷史宏觀與持倉走勢 (最近 60 日)</h2>
+            <h2 class="text-2xl font-black text-white flex items-center gap-2">📈 歷史宏觀與持倉走勢 (最近 600 日)</h2>
             <div class="text-xs text-slate-500">底色反映當日大盤狀態 (紅=熊市防禦 / 黃=背馳警告 / 綠=牛市通行)</div>
         </div>
         <div class="grid grid-cols-1 gap-6">
@@ -1783,6 +1806,7 @@ html = f"""<!DOCTYPE html>
         </div>
 
         <div class="grid grid-cols-4 gap-4" id="journal-stats"></div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2" id="kpi-scorecard"></div>
 
         <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-3 flex gap-4 items-end shadow-lg">
             <div>
@@ -2274,17 +2298,15 @@ function renderThemesTab() {{
             return val.toLocaleString();
         }}
 
-        // 🌟 終極整合版 renderJournal
+// 🌟 終極整合版 renderJournal
         function renderJournal() {{
             const openTbody = document.getElementById('journal-open-tbody');
             const closedTbody = document.getElementById('journal-closed-tbody');
             const statsContainer = document.getElementById('journal-stats');
 
-            // 1️⃣ 讀取 Filter 數值 (防呆設計：如果 HTML 未加 Filter UI，就預設 ALL)
             const stratFilter = document.getElementById('filter-strat') ? document.getElementById('filter-strat').value : 'ALL';
             const sourceFilter = document.getElementById('filter-source') ? document.getElementById('filter-source').value : 'ALL';
 
-            // 動態載入來源 Filter 選項 (只執行一次)
             if (!sourcesLoaded && document.getElementById('filter-source')) {{
                 let allSources = new Set();
                 tradeHistory.forEach(t => {{ if(t.sources) t.sources.forEach(s => allSources.add(s)); }});
@@ -2297,17 +2319,14 @@ function renderThemesTab() {{
                 sourcesLoaded = true;
             }}
 
-            // 2️⃣ 過濾邏輯
             let filteredHist = tradeHistory.filter(t => {{
                 let matchStrat = stratFilter === 'ALL' || (t.tag && t.tag.includes(stratFilter));
                 let matchSource = sourceFilter === 'ALL' || (t.sources && t.sources.includes(sourceFilter));
                 return matchStrat && matchSource;
             }});
 
-            // 3️⃣ 排序邏輯
             filteredHist.sort((a, b) => {{
                 let valA = a[currentSort]; let valB = b[currentSort];
-                // 特殊處理：浮動盈虧排序
                 if (currentSort === 'pnl') {{
                     valA = a.status === 'OPEN' ? (a.last_px - a.px)/a.px : (a.last_px - a.px);
                     valB = b.status === 'OPEN' ? (b.last_px - b.px)/b.px : (b.last_px - b.px);
@@ -2320,51 +2339,43 @@ function renderThemesTab() {{
             const opens = filteredHist.filter(t => t.status === 'OPEN');
             const closeds = filteredHist.filter(t => t.status !== 'OPEN');
 
+            // 💡 核心修復：統一 75/25 真實 P&L 計算函數，無論單子開關都通用
+            const calcTruePnl = (t) => {{
+                let buy_px = t.px;
+                let last_px = t.last_px || buy_px;
+                if (t.partial_tp_hit) {{
+                    let tp1_price = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px))*2);
+                    return (7500 / buy_px) * (tp1_price - buy_px) + (2500 / buy_px) * (last_px - buy_px);
+                }}
+                return (10000 / buy_px) * (last_px - buy_px);
+            }};
+
             // ==========================================
             // 📊 頂部 4 個總計方塊 & 🎯 機構級核心 KPI
             // ==========================================
             let totalClosedPnl = 0, wins = 0, totalOpenPnl = 0;
-            
-            // --- 新增：核心 KPI 變數 ---
             let grossProfit = 0, grossLoss = 0;
             let cumulativePnl = 0, peakCapital = 0, maxDrawdown = 0;
             
-            // 為了準確計算最大回撤 (MDD)，必須建立一個按時間順序排列的陣列
-            let chronologicalCloseds = [...closeds].sort((a, b) => {{
-                let dateA = a.close_date || a.date;
-                let dateB = b.close_date || b.date;
-                return dateA.localeCompare(dateB);
-            }});
+            let chronologicalCloseds = [...closeds].sort((a, b) => (a.close_date || a.date).localeCompare(b.close_date || b.date));
 
             chronologicalCloseds.forEach(t => {{
-                let tradePnl = (10000 / t.px) * (t.last_px - t.px);
+                let tradePnl = calcTruePnl(t); // 💡 使用真實 P&L
                 totalClosedPnl += tradePnl;
                 
-                if (t.status.includes('✅')) wins++;
+                if (tradePnl > 0) wins++; // 💡 只要總利潤 > 0 就是贏！杜絕勝率錯判
 
-                // 計算 Profit Factor 元素
                 if (tradePnl > 0) grossProfit += tradePnl;
                 else grossLoss += Math.abs(tradePnl);
 
-                // 計算 Max Drawdown
                 cumulativePnl += tradePnl;
                 if (cumulativePnl > peakCapital) peakCapital = cumulativePnl;
                 let drawdown = peakCapital - cumulativePnl;
                 if (drawdown > maxDrawdown) maxDrawdown = drawdown;
             }});
             
-            opens.forEach(t => {{
-                let buy_px = t.px;
-                let last_px = t.last_px;
-                // 🌟 混合會計公式：75% 已鎖定，25% 隨現價浮動
-                let tp1 = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px))*2); 
-                let pnl = t.partial_tp_hit ? 
-                    ((7500 / buy_px) * (tp1 - buy_px) + (2500 / buy_px) * (last_px - buy_px)) :
-                    (10000 / buy_px) * (last_px - buy_px);
-                totalOpenPnl += pnl;
-            }});
+            opens.forEach(t => {{ totalOpenPnl += calcTruePnl(t); }});
 
-            // --- 計算 KPI 最終數值 ---
             const totalClosedCount = closeds.length;
             const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : "999.99";
             const winRateDec = totalClosedCount > 0 ? (wins / totalClosedCount) : 0;
@@ -2373,7 +2384,6 @@ function renderThemesTab() {{
             const avgLoss = (totalClosedCount - wins) > 0 ? (grossLoss / (totalClosedCount - wins)) : 0;
             const expectancy = ((winRateDec * avgWin) - (lossRateDec * avgLoss)).toFixed(2);
 
-            // --- 渲染原本的 4 個舊方塊 ---
             const winRate = totalClosedCount > 0 ? (winRateDec * 100).toFixed(1) : 0;
             const closedPct = totalClosedCount > 0 ? ((totalClosedPnl / (totalClosedCount * 10000)) * 100).toFixed(2) : "0.00";
             const openPct = opens.length > 0 ? ((totalOpenPnl / (opens.length * 10000)) * 100).toFixed(2) : "0.00";
@@ -2389,7 +2399,7 @@ function renderThemesTab() {{
                     <div class="text-2xl font-black ${{closedColor}}">${{closedSign}}$${{totalClosedPnl.toFixed(0)}} <span class="text-sm">(${{closedSign}}${{closedPct}}%)</span></div>
                 </div>
                 <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
-                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">歷史勝率</div>
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">歷史勝率 (真實P&L)</div>
                     <div class="text-2xl font-black text-white">${{winRate}}%</div>
                     <div class="text-[9px] text-slate-500 mt-1">${{wins}} 贏 / ${{totalClosedCount - wins}} 輸</div>
                 </div>
@@ -2403,7 +2413,6 @@ function renderThemesTab() {{
                 </div>
             `;
 
-            // --- 渲染新增的 3 個 KPI 方塊 ---
             const kpiContainer = document.getElementById('kpi-scorecard');
             if (kpiContainer) {{
                 const pfColor = profitFactor >= 2 ? 'text-fuchsia-400' : (profitFactor >= 1.5 ? 'text-emerald-400' : 'text-amber-400');
@@ -2432,18 +2441,14 @@ function renderThemesTab() {{
                 `;
             }}
 
-            // ==========================================
-            // 🎯 1. 生成策略卡片
-            // ==========================================
             const strategyStats = {{}};
             closeds.forEach(t => {{
                 const strat = t.tag || '未分類';
-                if (!strategyStats[strat]) {{
-                    strategyStats[strat] = {{ trades: 0, wins: 0, pnl: 0, deployed: 0 }};
-                }}
+                if (!strategyStats[strat]) strategyStats[strat] = {{ trades: 0, wins: 0, pnl: 0, deployed: 0 }};
+                const tradePnl = calcTruePnl(t);
                 strategyStats[strat].trades += 1;
-                if (t.status.includes('✅')) strategyStats[strat].wins += 1;
-                strategyStats[strat].pnl += (10000 / t.px) * (t.last_px - t.px);
+                if (tradePnl > 0) strategyStats[strat].wins += 1;
+                strategyStats[strat].pnl += tradePnl;
                 strategyStats[strat].deployed += 10000;
             }});
 
@@ -2468,17 +2473,14 @@ function renderThemesTab() {{
             }}).join('');
             document.getElementById('strategy-stats-container').innerHTML = strategyHtml || '<div class="text-xs text-slate-500 italic p-2">暫無策略數據</div>';
 
-            // ==========================================
-            // 📈 2. 按進場指標 (RS / RSI) 分組統計
-            // ==========================================
             const metricStats = {{
                 rs: {{ '95-99 (極強)': {{ trades: 0, wins: 0, pnl: 0 }}, '90-94 (強勢)': {{ trades: 0, wins: 0, pnl: 0 }}, '80-89 (中等)': {{ trades: 0, wins: 0, pnl: 0 }}, '< 80 (較弱)': {{ trades: 0, wins: 0, pnl: 0 }} }},
                 rsi: {{ '< 20 (極度超賣)': {{ trades: 0, wins: 0, pnl: 0 }}, '20-25 (嚴重超賣)': {{ trades: 0, wins: 0, pnl: 0 }}, '> 25 (輕微超賣)': {{ trades: 0, wins: 0, pnl: 0 }} }}
             }};
 
             closeds.forEach(t => {{
-                const isWin = t.status.includes('✅');
-                const tradePnl = (10000 / t.px) * (t.last_px - t.px);
+                const tradePnl = calcTruePnl(t);
+                const isWin = tradePnl > 0;
                 
                 if (t.entry_metric) {{
                     if (t.entry_metric.startsWith('RS:')) {{
@@ -2526,9 +2528,6 @@ function renderThemesTab() {{
             if(rsTbody) rsTbody.innerHTML = renderMetricRows(metricStats.rs);
             if(rsiTbody) rsiTbody.innerHTML = renderMetricRows(metricStats.rsi);
 
-            // ==========================================
-            // 🧬 獨立特徵因子分析 (Feature Matrix) 計算
-            // ==========================================
             const featureStats = {{}};
             const ALL_STRATS = ["🏆 VCP 突破", "💥 BB 擠壓", "⚡ 缺口動能", "📉 極度超賣"];
             
@@ -2544,8 +2543,8 @@ function renderThemesTab() {{
                 const strat = t.tag;
                 if (!strat || !featureStats[strat]) return;
                 
-                const isWin = t.status.includes('✅');
-                const tradePnl = (10000 / t.px) * (t.last_px - t.px);
+                const tradePnl = calcTruePnl(t);
+                const isWin = tradePnl > 0;
                 
                 if (t.features) {{
                     if (t.features.mss) {{ featureStats[strat].mss.t++; if(isWin) featureStats[strat].mss.w++; featureStats[strat].mss.pnl += tradePnl; }}
@@ -2580,17 +2579,13 @@ function renderThemesTab() {{
                 `).join('');
             }}
 
-            // ==========================================
-            // 🔥 特定指標組合 (Combination Matrix) 計算
-            // ==========================================
             const comboStats = {{}};
-            
             ALL_STRATS.forEach(s => {{
                 comboStats[s] = {{
-                    'mss_smc': {{ t: 0, w: 0, pnl: 0 }}, // 只中 MSS + SMC
-                    'mss_amd': {{ t: 0, w: 0, pnl: 0 }}, // 只中 MSS + AMD
-                    'smc_amd': {{ t: 0, w: 0, pnl: 0 }}, // 只中 SMC + AMD
-                    'all_3': {{ t: 0, w: 0, pnl: 0 }}    // 3個全中
+                    'mss_smc': {{ t: 0, w: 0, pnl: 0 }},
+                    'mss_amd': {{ t: 0, w: 0, pnl: 0 }},
+                    'smc_amd': {{ t: 0, w: 0, pnl: 0 }},
+                    'all_3': {{ t: 0, w: 0, pnl: 0 }}    
                 }};
             }});
 
@@ -2598,32 +2593,22 @@ function renderThemesTab() {{
                 const strat = t.tag;
                 if (!strat || !comboStats[strat]) return;
                 
-                const isWin = t.status.includes('✅');
-                const tradePnl = (10000 / t.px) * (t.last_px - t.px);
+                const tradePnl = calcTruePnl(t);
+                const isWin = tradePnl > 0;
                 
                 if (t.features) {{
-                    // 將 Boolean 值轉做 true/false 方便判定
                     const hasMSS = !!t.features.mss;
                     const hasSMC = !!t.features.smc;
                     const hasAMD = !!t.features.amd;
                     
-                    // 精準將單子分類落對應嘅特定組合 (Mutually Exclusive)
                     if (hasMSS && hasSMC && hasAMD) {{
-                        comboStats[strat].all_3.t++;
-                        if(isWin) comboStats[strat].all_3.w++;
-                        comboStats[strat].all_3.pnl += tradePnl;
+                        comboStats[strat].all_3.t++; if(isWin) comboStats[strat].all_3.w++; comboStats[strat].all_3.pnl += tradePnl;
                     }} else if (hasMSS && hasSMC && !hasAMD) {{
-                        comboStats[strat].mss_smc.t++;
-                        if(isWin) comboStats[strat].mss_smc.w++;
-                        comboStats[strat].mss_smc.pnl += tradePnl;
+                        comboStats[strat].mss_smc.t++; if(isWin) comboStats[strat].mss_smc.w++; comboStats[strat].mss_smc.pnl += tradePnl;
                     }} else if (hasMSS && !hasSMC && hasAMD) {{
-                        comboStats[strat].mss_amd.t++;
-                        if(isWin) comboStats[strat].mss_amd.w++;
-                        comboStats[strat].mss_amd.pnl += tradePnl;
+                        comboStats[strat].mss_amd.t++; if(isWin) comboStats[strat].mss_amd.w++; comboStats[strat].mss_amd.pnl += tradePnl;
                     }} else if (!hasMSS && hasSMC && hasAMD) {{
-                        comboStats[strat].smc_amd.t++;
-                        if(isWin) comboStats[strat].smc_amd.w++;
-                        comboStats[strat].smc_amd.pnl += tradePnl;
+                        comboStats[strat].smc_amd.t++; if(isWin) comboStats[strat].smc_amd.w++; comboStats[strat].smc_amd.pnl += tradePnl;
                     }}
                 }}
             }});
@@ -2640,6 +2625,7 @@ function renderThemesTab() {{
                     </tr>
                 `).join('');
             }}
+        }}
 
             // ==========================================
             // 📂 3. 渲染 Open Positions (加入過濾/排序/板塊/市值/75%)
