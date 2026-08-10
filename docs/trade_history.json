@@ -1,0 +1,54 @@
+[
+    {
+        "date": "2026-08-10",
+        "tk": "ETSY",
+        "px": 85.55,
+        "sl": 81.05,
+        "tp": 99.04,
+        "initial_sl": 81.05,
+        "tp1_price": 92.3,
+        "last_px": 85.55,
+        "status": "OPEN",
+        "tag": "\ud83d\udca5 BB \u64e0\u58d3",
+        "entry_metric": "",
+        "curr_metric": "",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 1,
+        "features": {
+            "mss": false,
+            "smc": false,
+            "amd": true,
+            "ml_rsi": 57.8
+        }
+    },
+    {
+        "date": "2026-08-10",
+        "tk": "SEZL",
+        "px": 118.02,
+        "sl": 100.69,
+        "tp": 170.02,
+        "initial_sl": 100.69,
+        "tp1_price": 135.35,
+        "last_px": 118.02,
+        "status": "OPEN",
+        "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
+        "entry_metric": "RSI: 25",
+        "curr_metric": "RSI: 25",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 1,
+        "features": {
+            "mss": false,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 25.6
+        }
+    }
+]

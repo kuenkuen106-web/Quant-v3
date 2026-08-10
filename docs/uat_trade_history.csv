@@ -1,0 +1,3 @@
+﻿date,tk,px,sl,tp,initial_sl,tp1_price,last_px,status,tag,entry_metric,curr_metric,sources,sector,mcap,feature_score,features
+2026-08-10,ETSY,85.55,81.05,99.04,81.05,92.3,85.55,OPEN,💥 BB 擠壓,,,['S&P600_小型'],N/A,0,1,"{'mss': False, 'smc': False, 'amd': True, 'ml_rsi': 57.8}"
+2026-08-10,SEZL,118.02,100.69,170.02,100.69,135.35,118.02,OPEN,📉 極度超賣,RSI: 25,RSI: 25,['S&P600_小型'],N/A,0,1,"{'mss': False, 'smc': True, 'amd': False, 'ml_rsi': 25.6}"
