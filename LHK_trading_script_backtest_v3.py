@@ -37,6 +37,27 @@ PQR_SWING_MIN = 75
 FTD_VALID_DAYS = 20
 MAX_ACCOUNT_RISK_PCT = 0.01 # 每單最多虧損總資金的 1%
 
+TICKETSIZE = 10000
+PARTIAL_TP_PCT = 0.33
+PARTIAL_TP_R   = 2.0
+
+COMMISSION_PCT = 0.0005      # 單邊 0.05%
+SLIPPAGE_PCT   = 0.0010      # 突破日尾市買入，單邊 0.1%
+ROUND_TRIP_COST = (COMMISSION_PCT + SLIPPAGE_PCT) * 2   # 0.3%
+
+USE_MAX_TP = False 
+MAX_TP_ATR = 4.5
+
+ATR_TRAIL_MULT = 3.0 
+
+SWING_TIME_STOP_DAYS = 15
+SWING_TIME_STOP_MIN_R = 1.0
+
+BENCH = ['SPY', '^VIX', '^N225', 'JPY=X']
+
+IS_END  = '2023-12-31'    # 呢個日期之前 = 開發區，可以自由調參
+OOS_END = '2025-06-30'    # 之後 = 驗證區，只准睇唔准改
+
 # 👇 時光機設定：從 GitHub Actions 讀取要回溯幾多日 (預設回溯 10 日)
 # 假設你的腳本內新增一個模式
 START_DAYS = 500
@@ -45,24 +66,61 @@ END_DAYS = 0
 raw_days = os.environ.get("UAT_DAYS_AGO", "10")
 SIMULATE_DAYS_AGO = int(raw_days)
 
+IS_BACKTEST = SIMULATE_DAYS_AGO > 0
+IS_FINAL_RUN = (SIMULATE_DAYS_AGO <= END_DAYS)
+
+# =========================================================================
+# 🎚️ 出場方案（用環境變數切換，方便做 A/B/C 對照測試）
+# =========================================================================
+EXIT_PROFILES = {
+    # A = 你原本嘅設定
+    'A_current':    {'tp1_r': 1.5, 'tp1_pct': 0.75, 'use_max_tp': True,  'trail_mult': 3.0},
+    # B = 建議方案：細注止盈 + 無上限 + Chandelier
+    'B_runner':     {'tp1_r': 2.0, 'tp1_pct': 0.33, 'use_max_tp': False, 'trail_mult': 3.0},
+}
+EXIT_MODE = os.environ.get("EXIT_MODE", "B_runner")
+_CFG = EXIT_PROFILES[EXIT_MODE]
+
+PARTIAL_TP_R   = _CFG['tp1_r']
+PARTIAL_TP_PCT = _CFG['tp1_pct']
+USE_MAX_TP     = _CFG['use_max_tp']
+ATR_TRAIL_MULT = _CFG['trail_mult']
+MAX_TP_ATR     = 4.5
+
+print(f"🎚️ 出場方案：{EXIT_MODE} | TP1 {PARTIAL_TP_R}R 平 {PARTIAL_TP_PCT*100:.0f}% | MaxTP={USE_MAX_TP}")
+
 # =============================================================================
 # 功能函數區
 # =============================================================================
-STOCK_INFO_CACHE = {} # 👈 新增：智能緩存，避免重複呼叫 yfinance 拖慢速度
+INFO_CACHE_FILE = os.path.join(OUTPUT_DIR, "stock_info_cache.json")
+
+# 👇 開機時讀一次入記憶體（唔好喺 function 入面每次讀）
+STOCK_INFO_CACHE = {}
+if os.path.exists(INFO_CACHE_FILE):
+    try:
+        with open(INFO_CACHE_FILE, "r", encoding="utf-8") as f:
+            STOCK_INFO_CACHE = json.load(f)
+        print(f"⚡ 由 cache 讀取 {len(STOCK_INFO_CACHE)} 隻股票基本資料")
+    except Exception:
+        STOCK_INFO_CACHE = {}
 
 def get_stock_info(tk):
-    if tk in STOCK_INFO_CACHE: return STOCK_INFO_CACHE[tk]
+    if tk in STOCK_INFO_CACHE:
+        return STOCK_INFO_CACHE[tk]
     try:
         info = yf.Ticker(tk).info
-        sector = info.get('sector', 'N/A')
-        mcap = info.get('marketCap', 0)
-        STOCK_INFO_CACHE[tk] = {'sector': sector, 'mcap': mcap}
-        return STOCK_INFO_CACHE[tk]
-    except:
-        STOCK_INFO_CACHE[tk] = {'sector': 'N/A', 'mcap': 0}
-        return STOCK_INFO_CACHE[tk]
+        data = {
+            'sector': info.get('sector', 'N/A'),
+            'mcap': info.get('marketCap', 0),
+            'info_asof': datetime.date.today().isoformat()
+        }
+    except Exception:
+        data = {'sector': 'N/A', 'mcap': 0, 'info_asof': datetime.date.today().isoformat()}
+    STOCK_INFO_CACHE[tk] = data      # 👈 只係「改內容」，唔係賦值，所以唔會變局部變數
+    return data
 
 def send_discord_alert(ticker, strategy_name, price, sl, tp, embed_color, sources, tp1_price=None, features=None):
+    if IS_BACKTEST and SIMULATE_DAYS_AGO > 1: return
     if not DISCORD_WEBHOOK_URL: return
     unit = "¥" if ticker.endswith(".T") else "$"
     
@@ -78,7 +136,11 @@ def send_discord_alert(ticker, strategy_name, price, sl, tp, embed_color, source
     trail_str = "跌穿 5日新低" if "短線" in type_str else "跌穿 20日新低"
     tp1_val = tp1_price if tp1_price else tp
     
-    action_text = f"{type_str}\n1️⃣ **TP1:** `{unit}{tp1_val}` (平倉 75% 並保本)\n2️⃣ **TP2 (Trail):** {trail_str}清倉\n3️⃣ **Max TP:** `{unit}{tp}` (全數強制平倉)"
+    max_tp_line = f"3️⃣ **Max TP:** `{unit}{tp}` (全數強制平倉)" if tp else "3️⃣ **Max TP:** 無上限，由 Trailing 決定"
+    action_text = (f"{type_str}\n"
+                   f"1️⃣ **TP1:** `{unit}{tp1_val}` (平倉 {int(PARTIAL_TP_PCT*100)}% 並保本)\n"
+                   f"2️⃣ **TP2 (Trail):** {trail_str}清倉\n"
+                   f"{max_tp_line}")
     
     # 👇 新增：動態生成 Discord 專用嘅機構特徵字串
     feature_str = ""
@@ -160,7 +222,7 @@ def build_dynamic_watchlist():
         #csv_url = "https://raw.githubusercontent.com/datasets/s-p-500-companies/master/data/constituents.csv"
         #df_sp = pd.read_csv(csv_url, timeout=10)
         #add_to_map(df_sp['Symbol'].tolist(), "S&P500")
-    except:
+    except Exception as e:
         print(f"  ⚠️ S&P 500 CSV 載入失敗，啟動超級後備名單: {e}")
         # 超強後備名單 (超過 400 隻美股核心成分股)
         sp500_fallback = [
@@ -201,37 +263,40 @@ def build_dynamic_watchlist():
         ]
         add_to_map(sp500_fallback, "S&P500")
         print(f"  ✅ 成功載入 S&P 500 後備名單 (共 {len(sp500_fallback)} 隻)")
-        
-# ---------------------------------------------------------
-    # 2. 獲取美股異動黑馬 (改用 Yahoo Finance US 避開 Cloudflare)
-    # ---------------------------------------------------------
-    yahoo_us_urls = [
-        ("https://finance.yahoo.com/gainers", "Yahoo升幅"),
-        ("https://finance.yahoo.com/most-active", "Yahoo異動")
-    ]
-    for url, label in yahoo_us_urls:
-        try:
-            headers = {
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-                'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-                'Accept-Language': 'en-US,en;q=0.5'
-            }
-            res = requests.get(url, headers=headers, timeout=10)
-            
-            if res.status_code == 200:
-                import re
-                # 抽取 Yahoo US 的 href="/quote/AAPL" 結構
-                matches = re.findall(r'href="/quote/([A-Z]+)"', res.text)
-                if matches:
-                    found = list(dict.fromkeys(matches))[:30] # 保留最熱門 30 隻
-                    add_to_map(found, label)
-                    print(f"  🔥 成功捕捉到 {label}: {len(found)} 隻")
+
+    if IS_BACKTEST:
+        print("🕰️ [時光機] 已停用所有即時排行榜 source，只使用指數成分股")
+    else:
+        # ---------------------------------------------------------
+        # 2. 獲取美股異動黑馬 (改用 Yahoo Finance US 避開 Cloudflare)
+        # ---------------------------------------------------------
+        yahoo_us_urls = [
+            ("https://finance.yahoo.com/gainers", "Yahoo升幅"),
+            ("https://finance.yahoo.com/most-active", "Yahoo異動")
+        ]
+        for url, label in yahoo_us_urls:
+            try:
+                headers = {
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                    'Accept-Language': 'en-US,en;q=0.5'
+                }
+                res = requests.get(url, headers=headers, timeout=10)
+                
+                if res.status_code == 200:
+                    import re
+                    # 抽取 Yahoo US 的 href="/quote/AAPL" 結構
+                    matches = re.findall(r'href="/quote/([A-Z]+)"', res.text)
+                    if matches:
+                        found = list(dict.fromkeys(matches))[:30] # 保留最熱門 30 隻
+                        add_to_map(found, label)
+                        print(f"  🔥 成功捕捉到 {label}: {len(found)} 隻")
+                    else:
+                        print(f"  ⚠️ {label} 抓取略過: 找不到代號")
                 else:
-                    print(f"  ⚠️ {label} 抓取略過: 找不到代號")
-            else:
-                print(f"  ⚠️ {label} 抓取略過: HTTP {res.status_code}")
-        except Exception as e:
-            print(f"  ⚠️ {label} 抓取略過: {e}")
+                    print(f"  ⚠️ {label} 抓取略過: HTTP {res.status_code}")
+            except Exception as e:
+                print(f"  ⚠️ {label} 抓取略過: {e}")
 
     # ---------------------------------------------------------
     # 3. 獲取日股動態名單 (Nikkei 225 + 當日熱門)
@@ -313,36 +378,57 @@ def build_dynamic_watchlist():
             # 執行合併
         add_to_map(nk225_tickers, "NK225")
 
+
+    if IS_BACKTEST:
+        print("🕰️ [時光機] 已停用所有即時排行榜 source，只使用指數成分股")
+    else:
     # ---------------------------------------------------------
     # 3B. 捕捉 JP Trending (修復 404 網址改版問題)
     # ---------------------------------------------------------
-    try:
-        # 💡 更新為最新的 Yahoo JP 排行榜網址
-        jp_trending_url = "https://finance.yahoo.co.jp/stocks/ranking/volume" 
-        headers = {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-        }
-        res_jp = requests.get(jp_trending_url, headers=headers, timeout=10)
-        
-        if res_jp.status_code == 200:
-            import re
-            matches = re.findall(r'/quote/(\d{4}\.T)', res_jp.text)
+        try:
+            # 💡 更新為最新的 Yahoo JP 排行榜網址
+            jp_trending_url = "https://finance.yahoo.co.jp/stocks/ranking/volume" 
+            headers = {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+            }
+            res_jp = requests.get(jp_trending_url, headers=headers, timeout=10)
             
-            if matches:
-                jp_trending = list(dict.fromkeys(matches))[:30]
-                add_to_map(jp_trending, "JP熱門")
-                print(f"  🔥 成功捕捉到日股當日熱錢焦點 (Yahoo JP): {len(jp_trending)} 隻")
+            if res_jp.status_code == 200:
+                import re
+                matches = re.findall(r'/quote/(\d{4}\.T)', res_jp.text)
+                
+                if matches:
+                    jp_trending = list(dict.fromkeys(matches))[:30]
+                    add_to_map(jp_trending, "JP熱門")
+                    print(f"  🔥 成功捕捉到日股當日熱錢焦點 (Yahoo JP): {len(jp_trending)} 隻")
+                else:
+                    print("  ⚠️ JP Trending: 網頁結構改變，找不到代號")
             else:
-                print("  ⚠️ JP Trending: 網頁結構改變，找不到代號")
-        else:
-            print(f"  ⚠️ JP Trending 失敗: HTTP {res_jp.status_code}")
-    except Exception as e:
-        print(f"  ⚠️ JP Trending 略過: {e}")
+                print(f"  ⚠️ JP Trending 失敗: HTTP {res_jp.status_code}")
+        except Exception as e:
+            print(f"  ⚠️ JP Trending 略過: {e}")
 
     add_to_map(['SPY', '^VIX', '^N225'], "基準指數")
+    # 名單加入匯率
+    add_to_map(['JPY=X'], "匯率")
     return ticker_sources
 
-TICKER_MAP = build_dynamic_watchlist()
+_wl_tag = 'bt' if IS_BACKTEST else 'live'
+WATCHLIST_CACHE = os.path.join(OUTPUT_DIR, f"watchlist_cache_{_wl_tag}.json")
+
+_use_wl_cache = (os.path.exists(WATCHLIST_CACHE) and
+                 (time.time() - os.path.getmtime(WATCHLIST_CACHE)) < 86400)  # 24 小時
+
+if _use_wl_cache:
+    with open(WATCHLIST_CACHE, "r", encoding="utf-8") as f:
+        TICKER_MAP = json.load(f)
+    print(f"⚡ 由 cache 讀取觀察名單 ({len(TICKER_MAP)} 隻)")
+else:
+    TICKER_MAP = build_dynamic_watchlist()
+    with open(WATCHLIST_CACHE, "w", encoding="utf-8") as f:
+        json.dump(TICKER_MAP, f, ensure_ascii=False)
+
+print("⚠️ [偏差聲明] 名單使用當前指數成分股，存在生存者偏差，回測表現偏高")
 ALL_TICKERS = list(TICKER_MAP.keys())
 
 # --- ⚡ 提速核心：UAT 本地快取邏輯 ---
@@ -408,12 +494,13 @@ else:
 # ---------------------------------------------------------------------
 # 注意：快取存的是完整數據，截斷是發生在記憶體中，因此你可以隨意更改 SIMULATE_DAYS_AGO 而不需重新下載
 if SIMULATE_DAYS_AGO > 0:
-    print(f"⏰ [時光機] 正在抹除最近 {SIMULATE_DAYS_AGO} 天數據，回溯中...")
-    closes = closes.iloc[:-SIMULATE_DAYS_AGO]
-    highs = highs.iloc[:-SIMULATE_DAYS_AGO]
-    lows = lows.iloc[:-SIMULATE_DAYS_AGO]
-    vols = vols.iloc[:-SIMULATE_DAYS_AGO]
-    opens = opens.iloc[:-SIMULATE_DAYS_AGO]
+    cutoff = closes.index[-1] - pd.Timedelta(days=SIMULATE_DAYS_AGO)
+    print(f"⏰ [時光機] 回溯至 {cutoff.date()}")
+    closes = closes.loc[:cutoff]
+    highs  = highs.loc[:cutoff]
+    lows   = lows.loc[:cutoff]
+    vols   = vols.loc[:cutoff]
+    opens  = opens.loc[:cutoff]
 
 # 👇 獲取模擬當日的日期字串
 today_str = closes.index[-1].strftime('%Y-%m-%d')
@@ -427,7 +514,7 @@ print("⏳ [3/8] 正在計算美/日雙市場宏觀指標...")
 vix_c = closes['^VIX'].ffill()
 
 jp_tickers = [t for t in closes.columns if str(t).endswith('.T')]
-us_tickers = [t for t in closes.columns if not str(t).endswith('.T') and t not in ['SPY', '^VIX', '^N225']]
+us_tickers = [t for t in closes.columns if not str(t).endswith('.T') and t not in BENCH]
 
 # 👇 從 TICKER_MAP 智能提取「大盤成份股」名單
 us_index_tickers = [tk for tk, sources in TICKER_MAP.items() if any(s in ['S&P500_大盤', 'S&P500'] for s in sources) and tk in closes.columns]
@@ -559,10 +646,18 @@ r252 = closes / closes.shift(252) - 1
 # 檢查是否因為時光機回溯太深，導致 252 日數據全線陣亡
 if r252.isna().all().all():
     print("⚠️ [系統警告] 剩餘數據不足 252 日！RS 計算將智能降級為半年期 (126日) 基準。")
-    rs_rank = r126.rank(axis=1, pct=True) * 99 + 1
+    score = r126.rank(axis=1, pct=True) * 99 + 1
 else:
     r252_filled = r252.fillna(r126) 
-    rs_rank = ((0.6 * r126.fillna(0)) + (0.4 * r252_filled.fillna(0))).rank(axis=1, pct=True) * 99 + 1
+    score = ((0.6 * r126.fillna(0)) + (0.4 * r252_filled.fillna(0))).rank(axis=1, pct=True) * 99 + 1
+
+us_cols = [c for c in score.columns if not str(c).endswith('.T') and c not in BENCH]
+jp_cols = [c for c in score.columns if str(c).endswith('.T')]
+
+rs_rank = pd.concat([
+    score[us_cols].rank(axis=1, pct=True) * 99 + 1,
+    score[jp_cols].rank(axis=1, pct=True) * 99 + 1,
+], axis=1).reindex(columns=closes.columns)
 
 rs_momentum = rs_rank - rs_rank.shift(20)
 
@@ -578,9 +673,22 @@ current_lows = lows.iloc[-1].to_dict()     # 引入全日最低價
 dict_low20 = lows.rolling(20).min().iloc[-1].to_dict()
 dict_low5 = lows.rolling(5).min().iloc[-1].to_dict()
 
+# ATR（保留完整序列，供 Chandelier 使用）
+atr_series = (highs - lows).rolling(14).mean()
+atr_14 = atr_series.iloc[-1]
+
+# 🌟 CL-203：Chandelier Exit = 近期最高價 - N × ATR
+#    用 shift(1)，即係「尋日已知嘅 stop 水平」，避免當日自我觸發
+running_high_22 = highs.rolling(22).max()
+chandelier_swing = (running_high_22 - ATR_TRAIL_MULT * atr_series).shift(1)
+chandelier_short = (running_high_22 - 2.0 * atr_series).shift(1)   # 短線收緊啲
+dict_chandelier_swing = chandelier_swing.iloc[-1].to_dict()
+dict_chandelier_short = chandelier_short.iloc[-1].to_dict()
+current_opens = opens.iloc[-1].to_dict()      # 保守成交價用
+
 # 👇 新增：預先計算 SMA20 供超賣時間止損使用
 dict_sma20_stop = closes.rolling(20).mean().iloc[-1].to_dict()
-
+today_fx = float(current_prices.get('JPY=X', 0)) if not pd.isna(current_prices.get('JPY=X', np.nan)) else 0
 closed_this_run = []
 
 for trade in trade_history:
@@ -610,6 +718,7 @@ for trade in trade_history:
                 if now_px < (buy_px * 0.95):
                     trade['last_px'] = now_px
                     trade['status'], trade['close_date'] = '❌ 觸發 5% 絕對止損', today_str
+                    if trade.get('fx_entry') and today_fx: trade['fx_exit'] = round(today_fx, 4)
                     closed_this_run.append(trade)
                     continue
                     
@@ -618,20 +727,35 @@ for trade in trade_history:
                 if days_held >= 3 and now_px < current_ma20:
                     trade['last_px'] = now_px
                     trade['status'], trade['close_date'] = '❌ 觸發 3 日時間止損', today_str
+                    if trade.get('fx_entry') and today_fx: trade['fx_exit'] = round(today_fx, 4)
                     closed_this_run.append(trade)
                     continue
             
             initial_risk = buy_px - trade['initial_sl']
             is_short_term = ('缺口' in strat_tag or '超賣' in strat_tag)
+
+            # ==========================================
+            # ⏱️ CL-205：波段時間止損（15 日未行出 1R 就放走，釋放資金）
+            # ==========================================
+            if (not is_short_term
+                    and not trade['partial_tp_hit']
+                    and days_held >= SWING_TIME_STOP_DAYS
+                    and initial_risk > 0
+                    and (now_px - buy_px) < (initial_risk * SWING_TIME_STOP_MIN_R)):
+                trade['last_px'] = now_px
+                trade['status'], trade['close_date'] = '⏱️ 時間止損 (無進展)', today_str
+                if trade.get('fx_entry') and today_fx: trade['fx_exit'] = round(today_fx, 4)
+                closed_this_run.append(trade)
+                continue
             
             # 👇 讀取專屬的 TP1 價格 (相容舊紀錄)
-            tp1_price = trade.get('tp1_price', round(buy_px + (initial_risk * 2), 2))
+            tp1_price = trade.get('tp1_price', round(buy_px + (initial_risk * PARTIAL_TP_R), 2))
             
             # --- 分注平倉 ---
             if not trade['partial_tp_hit'] and today_high >= tp1_price and initial_risk > 0:
                 trade['partial_tp_hit'] = True
                 trade['sl'] = buy_px
-                print(f"🎯 [分注系統] {tk} 觸發 TP1 ({tp1_price})，鎖定 75% 利潤並保本。")
+                print(f"🎯 [分注系統] {tk} 觸發 TP1 ({tp1_price})，鎖定 {int(PARTIAL_TP_PCT*100)}% 利潤並保本。")
 
             # --- 最終結案判定 (3-Way Classification) ---
             tp, sl = trade.get('tp'), trade.get('sl')
@@ -639,27 +763,38 @@ for trade in trade_history:
             hit_sl = sl and today_low <= sl
             
             if trade['partial_tp_hit']:
-                # 🌟 雙軌放飛制 (短線 5 日，波段 20 日)
-                tk_trail_low = dict_low5.get(tk, today_low) if is_short_term else dict_low20.get(tk, today_low)
-                
-                if today_low <= tk_trail_low:
-                    # 放飛被掃出局：尾倉 25% 以 trail_low 價格離場
-                    trade['last_px'] = max(today_low, tk_trail_low) 
+                # 🌟 CL-203：Chandelier Exit（最高價回撤 N×ATR）
+                trail_stop = (dict_chandelier_short.get(tk) if is_short_term
+                              else dict_chandelier_swing.get(tk))
+
+                # 👇 保本優先：實際 stop = chandelier 同 買入價 之中較高者
+                if trail_stop and not pd.isna(trail_stop):
+                    eff_stop = max(float(trail_stop), buy_px)
+                else:
+                    eff_stop = buy_px
+
+                if today_low <= eff_stop:
+                    today_open = float(current_opens.get(tk, eff_stop))
+                    trade['last_px'] = round(min(eff_stop, today_open), 2)
                     trade['status'], trade['close_date'] = '✅ TRAIL EXIT', today_str
+                    if trade.get('fx_entry') and today_fx: trade['fx_exit'] = round(today_fx, 4)
                     closed_this_run.append(trade)
                 elif hit_tp:
                     # 撞 MAX TP 爆升：尾倉 25% 以 tp 價格完美止賺
                     trade['last_px'] = tp 
                     trade['status'], trade['close_date'] = '✅ MAX TP', today_str
+                    if trade.get('fx_entry') and today_fx: trade['fx_exit'] = round(today_fx, 4)
                     closed_this_run.append(trade)
             else:
                 if hit_sl:
                     trade['last_px'] = sl
                     trade['status'], trade['close_date'] = '❌ STOP LOSS', today_str
+                    if trade.get('fx_entry') and today_fx: trade['fx_exit'] = round(today_fx, 4)
                     closed_this_run.append(trade)
                 elif hit_tp:
                     trade['last_px'] = tp
                     trade['status'], trade['close_date'] = '✅ MAX TP', today_str
+                    if trade.get('fx_entry') and today_fx: trade['fx_exit'] = round(today_fx, 4)
                     closed_this_run.append(trade)
 
 swing_results, short_term_results, js_payload = [], [], []
@@ -682,9 +817,6 @@ bb_lower_all = sma20_all - (2 * std20_all)
 bb_width_all = (4 * std20_all) / sma20_all
 bb_width_min120 = bb_width_all.rolling(120).min().iloc[-1]
 
-# ATR
-atr_14 = (highs - lows).rolling(14).mean().iloc[-1]
-
 # ML-RSI 核心：保留時間序列以計算動態標準差
 delta = closes.diff()
 gain = delta.where(delta > 0, 0).rolling(14).mean()
@@ -698,9 +830,10 @@ max60 = closes.rolling(60).max()
 min60 = closes.rolling(60).min()
 base_dd = ((max60 - min60) / max60).iloc[-1]
 
-max10 = closes.rolling(10).max()
-min10 = closes.rolling(10).min()
-rec_volat = ((max10 - min10) / max10).iloc[-1]
+_c_prev = closes.shift(1)
+max10 = _c_prev.rolling(10).max()
+min10 = _c_prev.rolling(10).min()
+rec_volat = ((max10 - min10) / max10).iloc[-1] 
 
 sma50_all = closes.rolling(50).mean()
 sma200_all = closes.rolling(200).mean()
@@ -769,13 +902,16 @@ jp_mask = (dollar_vol_20.index.str.endswith('.T')) & (dollar_vol_20 >= 300_000_0
 valid_tickers = dollar_vol_20[us_mask | jp_mask].index.tolist()
 
 # 🛡️ 終極修復：踢走大盤指數，並加入 np.nan 預防 pd.isna 報錯
-valid_tickers = [t for t in valid_tickers if t not in ['SPY', '^VIX', '^N225'] and not pd.isna(dict_rs.get(t, np.nan))]
+valid_tickers = [t for t in valid_tickers if t not in BENCH and not pd.isna(dict_rs.get(t, np.nan))]
 
 print(f"🧹 過濾成交量低迷股票後，掃描名單由 {len(ALL_TICKERS)} 縮減至 {len(valid_tickers)} 隻！")
 
 # =========================================================================
 # 開始極速掃描 (只行精華名單)
 # =========================================================================
+from collections import Counter
+reject = Counter() 
+
 for ticker in valid_tickers:
     try:
         rs = dict_rs.get(ticker)
@@ -832,65 +968,63 @@ for ticker in valid_tickers:
         curr_vavs = dict_vavs.get(ticker, 0)
         vavs_ma = dict_vavs_ma.get(ticker, 0)
 
-        # 🌟 微觀 K 線結構 (收緊：拒絕長上影線的假突破)
+        # 🌟 微觀 K 線結構
         full_range = h_val - l_val
         candle_architecture_score = current_body_size / full_range if full_range > 0 else 0
+        is_solid_candle = candle_architecture_score >= 0.7
         closing_strength = (cp - l_val) / full_range if full_range > 0 else 0
-        is_solid_candle = (candle_architecture_score >= 0.6) and (closing_strength >= 0.75)
 
         # =================================================================
         # 🎯 方案二：設定「雙重共振」質量過濾器 (Quality Filter)
         # =================================================================
+        # 強制要求動能 (Momentum) 大於 2，且當日成交量必須是 20日平均的 1.5 倍以上
         quality_filter_passed = (rs_mom > 2) and (c_vol > v_ma20 * 1.5)
-
-        # 🎯 方案三：動態 VIX 波動率鎖定 (Dynamic Volatility Limit)
-        current_vix = float(vix_c.iloc[-1]) if not pd.isna(vix_c.iloc[-1]) else 15
-        
-        if current_vix < 15: 
-            dynamic_vol_limit = 0.12  # 🟢 平靜牛市：容許正常 VCP 收縮 (12%)
-        elif current_vix < 22: 
-            dynamic_vol_limit = 0.08  # 🟡 震盪市：開始收緊，要求更強的抗跌力 (8%)
-        else: 
-            dynamic_vol_limit = 0.05  # 🔴 恐慌市：極端嚴格！除非大戶鐵壁護盤死寂至 5%，否則絕不進場！
-
-        # 👑 精英制 RS 過濾：順勢突破策略必須是最強的 5% 股票
-        is_elite_rs = rs >= 95
 
         # =================================================================
         # 📈 策略 1：波段建倉 (VCP 突破 / BB 擠壓) 
+        # 結合 AlphaTrend, SMC 訂單塊, AMD 洗盤, VWAP 機構護航
         # =================================================================
         is_uptrend = (cp > sma50) and (sma50 > sma200)
         is_near_high = ((high120 - cp) / high120) <= 0.15
-        is_tight = (v_base_dd <= 0.35) and (v_rec_vol <= dynamic_vol_limit)
+        is_tight = (v_base_dd <= 0.35) and (v_rec_vol <= 0.12)
         
+        # 💡 升級：VCP 突破必須綁定「雙重共振」
         is_breaking_out = (cp > resist_10d) and quality_filter_passed
+        
         is_alpha_trend = (rsi_val > 50) and (cp > (sma20 + 0.5 * catr))
         is_institutional_ob = current_body_size > (1.5 * avg_body_size)
         is_amd_manipulation = (low5_min <= low20_min * 1.01) and (cp > (low5_min + 0.5 * catr))
         is_above_vwap = cp > vwap20
 
-        is_vcp = is_elite_rs and is_uptrend and is_near_high and is_tight and is_breaking_out and is_solid_candle and is_alpha_trend and is_institutional_ob and is_amd_manipulation and (not is_cpi_eve) and is_above_vwap
-        
-        is_bb_sqz = is_elite_rs and (dict_bb_width.get(ticker) <= dict_bb_width_min120.get(ticker) * 1.1) and is_uptrend and is_alpha_trend and is_solid_candle and (not is_cpi_eve) and is_above_vwap and quality_filter_passed
+        _conds = {
+            'uptrend': is_uptrend, 'near_high': is_near_high, 'tight': is_tight,
+            'breakout': is_breaking_out, 'solid_candle': is_solid_candle,
+            'alpha_trend': is_alpha_trend, 'smc_ob': is_institutional_ob,
+            'amd': is_amd_manipulation, 'above_vwap': is_above_vwap,
+            'quality': quality_filter_passed,
+        }
+        for k, v in _conds.items():
+            if not v: reject[k] += 1
 
+        is_vcp = is_uptrend and is_near_high and is_tight and is_breaking_out and is_solid_candle and is_alpha_trend and is_institutional_ob and is_amd_manipulation and (not is_cpi_eve) and is_above_vwap
+        
+        # 💡 升級：BB 擠壓強制綁定「雙重共振」，過濾平庸的波動
+        is_bb_sqz = (dict_bb_width.get(ticker) <= dict_bb_width_min120.get(ticker) * 1.1) and is_uptrend and is_alpha_trend and (not is_cpi_eve) and is_above_vwap and quality_filter_passed
+        
         # =================================================================
         # 📉 策略 2：短線游擊 (缺口動能 / 極度超賣)
+        # 結合 ML-RSI, MSS 結構轉變, 恐慌極值, 巨鯨吸收率
         # =================================================================
         gap_magnitude = (c_op - p_px) / p_px if p_px > 0 else 0
-        
-        # ⚡ 缺口動能優化：拒絕 Exhaustion Gap (>15%)，必須是精英 RS，且不應與 SMC (巨鯨實體) 衝突
-        is_gap_up = is_elite_rs and (0.03 <= gap_magnitude <= 0.15) and (c_vol > v_ma20 * 3) and (cp > c_op) and (closing_strength >= 0.8) and is_near_high and (not is_institutional_ob)
+        is_gap_up = (gap_magnitude >= 0.03) and (c_vol > v_ma20 * 2) and (cp > c_op) and (closing_strength >= 0.6)
         
         dynamic_oversold_threshold = max(18, 30 - (rsi_std * 0.5)) 
         is_ml_oversold = (rsi_val < dynamic_oversold_threshold)
         is_mss = cp > prev_high
         is_volumetric_extreme = c_vol > (v_ma50 * 1.5)
         is_whale_absorption = curr_vavs > (vavs_ma * 2.0)
-        
-        # 💡 極度超賣優化：First Green Day Rule
-        is_first_green_day = (cp > c_op) and (closing_strength >= 0.6)
 
-        is_oversold = is_ml_oversold and (cp < b_lower) and (dma50 < -0.15) and is_volumetric_extreme and is_first_green_day and (is_mss or is_whale_absorption)
+        is_oversold = is_ml_oversold and (cp < b_lower) and (dma50 < -0.15) and is_volumetric_extreme and (is_mss or is_whale_absorption)
 
         # =================================================================
         # ⚖️ 大市四象限過濾與動態止損 (Seasonal & Regime Control)
@@ -923,20 +1057,23 @@ for ticker in valid_tickers:
                 # 美股雜訊大，必須強制給予最少 1.5 ATR 的呼吸空間，防震倉！
                 sl_p = round(cp - 1.5 * catr, 2)
                 
-            tp_p = round(cp + 4.5 * catr, 2) 
+            tp_p = round(cp + MAX_TP_ATR * catr, 2) if USE_MAX_TP else None
             risk_per_share = cp - sl_p
             
             # 👇 核心調校：將 TP1 統一改為 1.5R (原為 2.0R 太難觸發)
-            target_r = 1.5 
-            tp1_price = round(cp + (risk_per_share * target_r), 2)
+            tp1_price = round(cp + (risk_per_share * PARTIAL_TP_R), 2)
             
+            _u = "¥" if is_jp else "$"
             swing_results.append({
                 'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 
                 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name,
+                # 👇 新增：顯示用文字，避免 None 爆 HTML
+                'tp_txt': (f"{_u}{tp_p}" if tp_p else "Trailing 出場"),
+                'tp_pct': (f"(+{((tp_p-cp)/cp*100):.1f}%)" if tp_p else "(無上限)"),
                 'has_mss': is_mss, 'has_smc': is_institutional_ob, 
                 'has_amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
             })
-
+            
             trade_info = {
                 'date': today_str, 'tk': ticker, 'px': round(cp, 2), 
                 'sl': sl_p, 'tp': tp_p, 'initial_sl': sl_p, 'tp1_price': tp1_price,
@@ -971,12 +1108,16 @@ for ticker in valid_tickers:
             risk_per_share = cp - sl_p
             entry_metric = f"RS: {int(rs)}"
             
-            # 動能爆發，強制要求 TP1 達到 1.5R，修復 EV (數學期望值)！
-            tp1_price = round(cp + (risk_per_share * 1.5), 2)
+            # 動能爆發，強制要求 TP1，修復 EV (數學期望值)！
+            tp1_price = round(cp + (risk_per_share * PARTIAL_TP_R), 2)
             
+            _u = "¥" if is_jp else "$"
             short_term_results.append({
                 'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 
                 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name,
+                # 👇 新增：顯示用文字，避免 None 爆 HTML
+                'tp_txt': (f"{_u}{tp_p}" if tp_p else "Trailing 出場"),
+                'tp_pct': (f"(+{((tp_p-cp)/cp*100):.1f}%)" if tp_p else "(無上限)"),
                 'has_mss': is_mss, 'has_smc': is_institutional_ob, 
                 'has_amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
             })
@@ -1001,11 +1142,15 @@ for ticker in valid_tickers:
             entry_metric = f"RSI: {int(rsi_val)}"
             
             # 搶反彈見好就收，保留 1R 觸發 TP1，保本最重要！
-            tp1_price = round(cp + (risk_per_share * 1.0), 2)
+            tp1_price = round(cp + (risk_per_share * PARTIAL_TP_R), 2)
             
+            _u = "¥" if is_jp else "$"
             short_term_results.append({
                 'tk': ticker, 'rs': round(rs,0), 'mom': round(rs_mom,1), 
                 'px': round(cp,2), 'sl': sl_p, 'tp': tp_p, 'tag': tag_name,
+                # 👇 新增：顯示用文字，避免 None 爆 HTML
+                'tp_txt': (f"{_u}{tp_p}" if tp_p else "Trailing 出場"),
+                'tp_pct': (f"(+{((tp_p-cp)/cp*100):.1f}%)" if tp_p else "(無上限)"),
                 'has_mss': is_mss, 'has_smc': is_institutional_ob, 
                 'has_amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
             })
@@ -1020,6 +1165,10 @@ for ticker in valid_tickers:
         if trade_info:
             ticker_sources = TICKER_MAP.get(ticker, [])
             s_info = get_stock_info(ticker) 
+
+            # 👇 新增：日股記低開倉當日匯率
+            if is_jp and 'JPY=X' in current_prices and not pd.isna(current_prices['JPY=X']):
+                trade_info['fx_entry'] = round(float(current_prices['JPY=X']), 4)
             
             # 👇 計算分數
             feature_score = int(is_mss) + int(is_institutional_ob) + int(is_amd_manipulation)
@@ -1032,6 +1181,9 @@ for ticker in valid_tickers:
                 'mss': is_mss, 'smc': is_institutional_ob,
                 'amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
             }
+            trade_info['period'] = ('IS' if today_str <= IS_END
+                else 'OOS' if today_str <= OOS_END
+                else 'FWD')
 
             current_ticker_color = jp_macro_color if is_jp else us_macro_color
             
@@ -1043,12 +1195,17 @@ for ticker in valid_tickers:
             
             js_payload.append({
                 "ticker": ticker, "tag": tag_name, "curr_price": round(cp, 2), 
-                "sl_price": sl_p, "tp_price": tp_p, "risk_per_share": risk_per_share,
+                "sl_price": sl_p, "tp_price": tp_p if tp_p else 0,   # 👈 加 if
+                "risk_per_share": risk_per_share,
                 "feature_score": feature_score
             })
 
     except Exception as e:
         pass
+
+print(f"\n📊 掃描 {len(valid_tickers)} 隻，各條件不通過統計：")
+for k, v in reject.most_common():
+    print(f"   {k:<15} 擋走 {v:>5} 隻 ({v/max(len(valid_tickers),1)*100:5.1f}%)")
 
 swing_results.sort(key=lambda x: x['rs'], reverse=True)
 short_term_results.sort(key=lambda x: x['rs'], reverse=True)
@@ -1081,17 +1238,6 @@ if trade_history:
 # =============================================================================
 sector_performance = {}
 stealth_hot_stocks = []
-
-# 讀取模擬當日的 VIX 恐慌指數 (防呆預設 15)
-current_vix = float(vix_c.iloc[-1]) if not pd.isna(vix_c.iloc[-1]) else 15.0
-
-# 💡 根據 VIX 動態計算 VCP 的「死寂」波幅上限 (Dynamic Threshold)
-if current_vix < 15:
-    dynamic_vol_limit = 0.08  # 平靜市 (Low VIX)：要求極嚴格，波幅必須 < 8%
-elif current_vix < 22:
-    dynamic_vol_limit = 0.10  # 正常市 (Normal VIX)：標準 10%
-else:
-    dynamic_vol_limit = 0.13  # 恐慌/高波動市 (High VIX)：大盤震盪，放寬至 13%
 
 for ticker in valid_tickers:
     try:
@@ -1144,40 +1290,41 @@ print("⏳ [7/8] 正在結算戰績並發送 Discord 報告...")
 # =========================================================================
 # 🛠️ 修正版：基於真實 P&L 計算勝率 (杜絕「蝕錢卻當贏」的 Bug)
 # =========================================================================
-def calculate_stats(history):
-    closed = [t for t in history if '✅' in t.get('status', '') or '❌' in t.get('status', '')]
-    if not closed: return 0, 0, 0
-    
-    wins = []
-    for t in closed:
-        buy_px = t.get('px', 0)
-        last_px = t.get('last_px', buy_px)
+def calc_true_pnl(t, partial_pct=PARTIAL_TP_PCT):
+    buy_px  = t.get('px', 0)
+    last_px = t.get('last_px', buy_px)
+    if not buy_px or buy_px <= 0: return 0.0
+
+    if t.get('partial_tp_hit', False):
         initial_sl = t.get('initial_sl', buy_px)
-        
-        # 重新計算該筆已結案交易的真實實現 P&L
-        if t.get('partial_tp_hit', False):
-            tp1_price = t.get('tp1_price', buy_px + (buy_px - initial_sl) * 2)
-            pnl_closed = (7500 / buy_px) * (tp1_price - buy_px)
-            pnl_floating = (2500 / buy_px) * (last_px - buy_px)
-            trade_pnl = pnl_closed + pnl_floating
-        else:
-            trade_pnl = (10000 / buy_px) * (last_px - buy_px)
-            
-        # 🌟 真正的贏：實現利潤大於 $0 才是 Win！
-        if trade_pnl > 0:
-            wins.append(t)
-            
-    win_rate = round(len(wins) / len(closed) * 100, 1)
-    return len(closed), len(wins), win_rate
+        tp1_price  = t.get('tp1_price', buy_px + (buy_px - initial_sl) * PARTIAL_TP_R)
+        pnl = ((partial_pct * TICKETSIZE / buy_px) * (tp1_price - buy_px)
+               + ((1 - partial_pct) * TICKETSIZE / buy_px) * (last_px - buy_px))
+    else:
+        pnl = (TICKETSIZE / buy_px) * (last_px - buy_px)
+
+    # 👇 CL-106：日股要換算返美元
+    fx_e, fx_x = t.get('fx_entry'), t.get('fx_exit')
+    if fx_e and fx_x and fx_x > 0:
+        pnl = TICKETSIZE * ((1 + pnl / TICKETSIZE) * (fx_e / fx_x) - 1)
+
+    # 👇 CL-105：扣返來回交易成本
+    return pnl - (TICKETSIZE * ROUND_TRIP_COST)
+
+def calculate_stats(history):
+    closed = [t for t in history if t.get('status') != 'OPEN']
+    if not closed: return 0, 0, 0
+    wins = [t for t in closed if calc_true_pnl(t) > 0]
+    return len(closed), len(wins), round(len(wins)/len(closed)*100, 1)
 
 total_closed, wins, win_rate = calculate_stats(trade_history)
 
-if DISCORD_SUMMARY_WEBHOOK:
+if DISCORD_SUMMARY_WEBHOOK and IS_FINAL_RUN:
     # 1. 今日結案明細
     detail_lines = []
     if closed_this_run:
         for t in closed_this_run:
-            shares = 10000 / t['px']
+            shares = TICKETSIZE / t['px']
             pnl = shares * (t['last_px'] - t['px'])
             pnl_str = f"+${pnl:.2f}" if pnl >= 0 else f"-${abs(pnl):.2f}"
             icon = "🟢" if pnl >= 0 else "🔴"
@@ -1201,20 +1348,20 @@ if DISCORD_SUMMARY_WEBHOOK:
         if t.get('partial_tp_hit', False):
             # 75% 已經鎖定在 TP1，25% 隨現價浮動
             initial_risk = buy_px - t.get('initial_sl', buy_px)
-            tp1_price = t.get('tp1_price', buy_px + (initial_risk * 2))
+            tp1_price = t.get('tp1_price', buy_px + (initial_risk * PARTIAL_TP_R))
             
-            pnl_closed_half = (7500 / buy_px) * (tp1_price - buy_px)   # 已鎖定利潤
-            pnl_floating_half = (2500 / buy_px) * (last_px - buy_px) # 剩餘浮動盈虧
+            pnl_closed_half = (TICKETSIZE * PARTIAL_TP_PCT / buy_px) * (tp1_price - buy_px)   # 已鎖定利潤
+            pnl_floating_half = (TICKETSIZE * (1 - PARTIAL_TP_PCT) / buy_px) * (last_px - buy_px) # 剩餘浮動盈虧
             floating_pnl += (pnl_closed_half + pnl_floating_half)
         else:
             # 常規未分注持倉，100% 隨現價浮動
-            floating_pnl += (10000 / buy_px) * (last_px - buy_px)
+            floating_pnl += (TICKETSIZE / buy_px) * (last_px - buy_px)
             
     floating_str = f"+${floating_pnl:.2f}" if floating_pnl >= 0 else f"-${abs(floating_pnl):.2f}"
 
-    # 3. 細分策略 P&L 結算 (歷史總計 - 強制清洗並排序)
+    # 3. 細分策略 P&L 結算 (歷史總計 - 強制清洗並排序)      
     strategy_stats = {}
-    for t in [x for x in trade_history if '✅' in x.get('status', '') or '❌' in x.get('status', '')]:
+    for t in [x for x in trade_history if x.get('status') != 'OPEN']:
         raw_tag = t.get('tag', '未分類')
         
         # 🧹 清洗標籤：統一合併分注與全平倉的數據
@@ -1223,10 +1370,10 @@ if DISCORD_SUMMARY_WEBHOOK:
         if clean_tag not in strategy_stats: 
             strategy_stats[clean_tag] = {'total': 0, 'wins': 0, 'pnl': 0}
             
-        trade_pnl = (10000 / t['px']) * (t['last_px'] - t['px'])
+        trade_pnl = calc_true_pnl(t)
         strategy_stats[clean_tag]['total'] += 1
         strategy_stats[clean_tag]['pnl'] += trade_pnl
-        if '✅' in t.get('status', ''):
+        if trade_pnl > 0:
             strategy_stats[clean_tag]['wins'] += 1
 
     breakdown_lines = []
@@ -1387,15 +1534,24 @@ if DISCORD_SUMMARY_WEBHOOK:
         pass
 
 # =============================================================================
-# MODULE 7 — 生成 UAT 前端 HTML (雙分頁系統：Dashboard + Journal)
+# MODULE 8 — 生成 UAT 前端 HTML (雙分頁系統：Dashboard + Journal)
 # =============================================================================
-print("⏳ [7/7] 正在生成雙分頁量化儀表板...")
+if not IS_FINAL_RUN:
+    try:
+        with open(INFO_CACHE_FILE, "w", encoding="utf-8") as f:
+            json.dump(STOCK_INFO_CACHE, f, ensure_ascii=False)
+    except Exception:
+        pass
+    print(f"⏭️ [{today_str}] 中途回測，略過 HTML 生成")
+    raise SystemExit(0)
+
+print("⏳ [8/8] 正在生成雙分頁量化儀表板...")
 
 def get_unit(tk): return "¥" if tk.endswith(".T") else "$"
 
-# 👇 新增：準備歷史走勢圖表數據 (最近 600 日)
+# 👇 新增：準備歷史走勢圖表數據 (最近 400 日)
 print("⏳ 正在生成歷史宏觀走勢圖表數據...")
-hist_dates = closes.index[-600:]
+hist_dates = closes.index[-400:]
 
 # 1. 🛡️ 強制全局 ffill()，填補美日假期交錯導致的 NaN 漏洞
 c_us_valid = closes[us_tickers].ffill()
@@ -1459,8 +1615,8 @@ for i, d in enumerate(hist_dates):
                     elif '超賣' in tag: strat_counts['OVERSOLD'] += 1
             
             # 2. 計算累積 P&L (只計當日或之前已經結案的單)
-            if c_date <= d_str and ('✅' in t.get('status', '') or '❌' in t.get('status', '')):
-                pnl = (10000 / t['px']) * (t['last_px'] - t['px'])
+            if c_date <= d_str and t.get('status') != 'OPEN':
+                pnl = calc_true_pnl(t) 
                 tag = t.get('tag', '')
                 if 'VCP' in tag: cum_pnl['VCP'] += pnl
                 elif 'BB' in tag: cum_pnl['BB'] += pnl
@@ -1687,7 +1843,7 @@ html = f"""<!DOCTYPE html>
                             <span class="text-[8px] bg-slate-700/50 text-slate-300 px-1 rounded border border-slate-600">🧠 {d.get('ml_rsi')}</span>
                         </div>
                         <div class="flex justify-between text-[9px] mt-1.5 pt-1.5 border-t border-slate-700/50">
-                            <span class="text-emerald-400 font-mono">🎯 TP: {get_unit(d['tk'])}{d['tp']} (+{((d['tp']-d['px'])/d['px']*100):.1f}%)</span>
+                            <span class="text-emerald-400 font-mono">🎯 TP: {d['tp_txt']} {d['tp_pct']}</span>
                             <span class="text-red-400 font-mono">🛑 SL: {get_unit(d['tk'])}{d['sl']} ({((d['sl']-d['px'])/d['px']*100):.1f}%)</span>
                         </div>
                     </div>
@@ -1712,7 +1868,7 @@ html = f"""<!DOCTYPE html>
                             <span class="text-[8px] bg-slate-700/50 text-slate-300 px-1 rounded border border-slate-600">🧠 {d.get('ml_rsi')}</span>
                         </div>
                         <div class="flex justify-between text-[9px] mt-1.5 pt-1.5 border-t border-slate-700/50">
-                            <span class="text-emerald-400 font-mono">🎯 TP: {get_unit(d['tk'])}{d['tp']} (+{((d['tp']-d['px'])/d['px']*100):.1f}%)</span>
+                            <span class="text-emerald-400 font-mono">🎯 TP: {d['tp_txt']} {d['tp_pct']}</span>
                             <span class="text-red-400 font-mono">🛑 SL: {get_unit(d['tk'])}{d['sl']} ({((d['sl']-d['px'])/d['px']*100):.1f}%)</span>
                         </div>
                     </div>
@@ -1731,7 +1887,7 @@ html = f"""<!DOCTYPE html>
                     </div>
                     <div class="flex items-center gap-2">
                         <label class="text-[10px] text-slate-400 font-bold uppercase">總資金 (Account Size):</label>
-                        <input type="number" id="acc_size" value="10000" class="bg-slate-800 border border-slate-600 text-white text-xs px-2 py-1 rounded w-24 text-right focus:outline-none focus:border-amber-500" onchange="updateCalculator()" onkeyup="updateCalculator()">
+                        <input type="number" id="acc_size" value="{TICKETSIZE}" class="bg-slate-800 border border-slate-600 text-white text-xs px-2 py-1 rounded w-24 text-right focus:outline-none focus:border-amber-500" onchange="updateCalculator()" onkeyup="updateCalculator()">
                     </div>
                 </div>
                 <div class="grid grid-cols-5 gap-3 text-center">
@@ -1769,7 +1925,7 @@ html = f"""<!DOCTYPE html>
 
     <main id="tab-charts" class="hidden flex-1 overflow-y-auto bg-slate-900 rounded-xl border border-slate-800 p-6 z-10 flex flex-col gap-6 shadow-lg">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-            <h2 class="text-2xl font-black text-white flex items-center gap-2">📈 歷史宏觀與持倉走勢 (最近 600 日)</h2>
+            <h2 class="text-2xl font-black text-white flex items-center gap-2">📈 歷史宏觀與持倉走勢 (最近 60 日)</h2>
             <div class="text-xs text-slate-500">底色反映當日大盤狀態 (紅=熊市防禦 / 黃=背馳警告 / 綠=牛市通行)</div>
         </div>
         <div class="grid grid-cols-1 gap-6">
@@ -1824,6 +1980,15 @@ html = f"""<!DOCTYPE html>
                 <select id="filter-source" onchange="renderJournal()" class="bg-slate-900 border border-slate-600 text-xs text-white px-3 py-1.5 rounded outline-none focus:border-fuchsia-500">
                     <option value="ALL">全部來源</option>
                     </select>
+            </div>
+            <div>
+                <label class="text-[10px] text-slate-400 font-bold uppercase mb-1 block">🧪 樣本期間</label>
+                <select id="filter-period" onchange="renderJournal()" class="bg-slate-900 border border-slate-600 text-xs text-white px-3 py-1.5 rounded outline-none focus:border-fuchsia-500">
+                    <option value="ALL">全部期間</option>
+                    <option value="IS">In-Sample (開發區)</option>
+                    <option value="OOS">Out-of-Sample (驗證區)</option>
+                    <option value="FWD">Forward (前瞻區)</option>
+                </select>
             </div>
         </div>
 
@@ -1946,6 +2111,11 @@ html = f"""<!DOCTYPE html>
         const chartData = {chart_data_str}; // 👈 加入呢行
         const tickerMap = {ticker_map_str}; // 接收 Python 傳入的完整觀察清單
         const themesData = {themes_data_str};
+        const TICKETSIZE      = {TICKETSIZE};
+        const PARTIAL_TP_PCT  = {PARTIAL_TP_PCT};
+        const PARTIAL_PCT     = {PARTIAL_TP_PCT};
+        const PARTIAL_TP_R    = {PARTIAL_TP_R};
+        const ROUND_TRIP_COST = {ROUND_TRIP_COST};       
         
         let chartsRendered = false; // 👈 確保圖表只渲染一次
         let currentSelectedTicker = null;
@@ -2007,17 +2177,17 @@ html = f"""<!DOCTYPE html>
                 let pnl = 0;
 
                 if (isClosed) {{
-                    pnl = (10000 / buy_px) * (last_px - buy_px);
+                    pnl = (TICKETSIZE / buy_px) * (last_px - buy_px);
                 }} else {{
                     if (t.partial_tp_hit) {{
-                        let tp1_price = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px))*2);
-                        pnl = (7500 / buy_px) * (tp1_price - buy_px) + (2500 / buy_px) * (last_px - buy_px);
+                        let tp1_price = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px))*PARTIAL_TP_R);
+                        pnl = (TICKETSIZE * PARTIAL_TP_PCT / buy_px) * (tp1_price - buy_px) + (TICKETSIZE * (1 - PARTIAL_TP_PCT) / buy_px) * (last_px - buy_px);
                     }} else {{
-                        pnl = (10000 / buy_px) * (last_px - buy_px);
+                        pnl = (TICKETSIZE / buy_px) * (last_px - buy_px);
                     }}
                 }}
 
-                let pnlPct = (pnl / 10000 * 100).toFixed(2);
+                let pnlPct = (pnl / TICKETSIZE * 100).toFixed(2);
                 let pColor = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
                 let unit = t.tk.endsWith('.T') ? '¥' : '$';
                 let statusBadge = isClosed ? `<span class="text-slate-400 font-bold">${{t.status}}</span>` : `<span class="text-cyan-400 font-black bg-cyan-950/50 px-2 py-0.5 rounded border border-cyan-800">OPEN 持倉中</span>`;
@@ -2262,20 +2432,22 @@ function renderThemesTab() {{
             const unit = isJp ? '¥' : '$';
 
             document.getElementById('calc_ticker_name').innerText = data.ticker + " (" + data.tag + ")";
-            const accountSize = parseFloat(document.getElementById('acc_size').value) || 10000;
+
+            const accountSize = parseFloat(document.getElementById('acc_size').value) || TICKETSIZE;
             const riskAmount = accountSize * {MAX_ACCOUNT_RISK_PCT};
-            
+
             let shares = Math.floor(riskAmount / data.risk_per_share);
+            if (isJp) shares = Math.floor(shares / 100) * 100;
             if (shares <= 0) shares = 0;
-            
+
             const totalCost = shares * data.curr_price;
             const actualPosPct = (accountSize > 0) ? (totalCost / accountSize * 100).toFixed(1) : 0;
-            
-            document.getElementById('calc_entry').innerText = unit + data.curr_price.toFixed(2);
-            document.getElementById('calc_sl').innerText = unit + data.sl_price.toFixed(2);
-            document.getElementById('calc_tp').innerText = unit + data.tp_price.toFixed(2);
+
+            document.getElementById('calc_entry').innerText  = unit + data.curr_price.toFixed(2);
+            document.getElementById('calc_sl').innerText     = unit + data.sl_price.toFixed(2);
+            document.getElementById('calc_tp').innerText     = data.tp_price ? unit + data.tp_price.toFixed(2) : "Trailing 出場";
             document.getElementById('calc_shares').innerText = shares;
-            document.getElementById('calc_cost').innerText = unit + totalCost.toLocaleString(undefined, {{maximumFractionDigits: 0}}) + " (" + actualPosPct + "%)";
+            document.getElementById('calc_cost').innerText   = unit + totalCost.toLocaleString(undefined, {{maximumFractionDigits: 0}}) + " (" + actualPosPct + "%)";
         }}
 
         // 👇 新增全域變數 (控制排序與過濾)
@@ -2298,15 +2470,37 @@ function renderThemesTab() {{
             return val.toLocaleString();
         }}
 
-// 🌟 終極整合版 renderJournal
+        // 🌟 終極整合版 renderJournal
         function renderJournal() {{
+            // 🌟 唯一嘅 P&L 計算公式，全份 dashboard 只准用呢個
+            const calcTruePnl = (t) => {{
+                const buy_px  = t.px;
+                const last_px = t.last_px || buy_px;
+                let pnl;
+                if (t.partial_tp_hit) {{
+                    const initial_sl = t.initial_sl || buy_px;
+                    const tp1_price  = t.tp1_price || (buy_px + (buy_px - initial_sl) * PARTIAL_TP_R);
+                    pnl = (PARTIAL_PCT * TICKETSIZE / buy_px) * (tp1_price - buy_px)
+                        + ((1 - PARTIAL_PCT) * TICKETSIZE / buy_px) * (last_px - buy_px);
+                }} else {{
+                    pnl = (TICKETSIZE / buy_px) * (last_px - buy_px);
+                }}
+                if (t.fx_entry && t.fx_exit) {{
+                    pnl = TICKETSIZE * ((1 + pnl / TICKETSIZE) * (t.fx_entry / t.fx_exit) - 1);
+                }}
+                return pnl - (TICKETSIZE * ROUND_TRIP_COST);   // 👈 交易成本
+            }};    
+
             const openTbody = document.getElementById('journal-open-tbody');
             const closedTbody = document.getElementById('journal-closed-tbody');
             const statsContainer = document.getElementById('journal-stats');
 
+            // 1️⃣ 讀取 Filter 數值 (防呆設計：如果 HTML 未加 Filter UI，就預設 ALL)
             const stratFilter = document.getElementById('filter-strat') ? document.getElementById('filter-strat').value : 'ALL';
             const sourceFilter = document.getElementById('filter-source') ? document.getElementById('filter-source').value : 'ALL';
+            const periodFilter = document.getElementById('filter-period') ? document.getElementById('filter-period').value : 'ALL';
 
+            // 動態載入來源 Filter 選項 (只執行一次)
             if (!sourcesLoaded && document.getElementById('filter-source')) {{
                 let allSources = new Set();
                 tradeHistory.forEach(t => {{ if(t.sources) t.sources.forEach(s => allSources.add(s)); }});
@@ -2319,14 +2513,18 @@ function renderThemesTab() {{
                 sourcesLoaded = true;
             }}
 
+            // 2️⃣ 過濾邏輯
             let filteredHist = tradeHistory.filter(t => {{
                 let matchStrat = stratFilter === 'ALL' || (t.tag && t.tag.includes(stratFilter));
                 let matchSource = sourceFilter === 'ALL' || (t.sources && t.sources.includes(sourceFilter));
-                return matchStrat && matchSource;
+                let matchPeriod = periodFilter === 'ALL' || t.period === periodFilter;
+                return matchStrat && matchSource && matchPeriod;
             }});
 
+            // 3️⃣ 排序邏輯
             filteredHist.sort((a, b) => {{
                 let valA = a[currentSort]; let valB = b[currentSort];
+                // 特殊處理：浮動盈虧排序
                 if (currentSort === 'pnl') {{
                     valA = a.status === 'OPEN' ? (a.last_px - a.px)/a.px : (a.last_px - a.px);
                     valB = b.status === 'OPEN' ? (b.last_px - b.px)/b.px : (b.last_px - b.px);
@@ -2339,43 +2537,51 @@ function renderThemesTab() {{
             const opens = filteredHist.filter(t => t.status === 'OPEN');
             const closeds = filteredHist.filter(t => t.status !== 'OPEN');
 
-            // 💡 核心修復：統一 75/25 真實 P&L 計算函數，無論單子開關都通用
-            const calcTruePnl = (t) => {{
-                let buy_px = t.px;
-                let last_px = t.last_px || buy_px;
-                if (t.partial_tp_hit) {{
-                    let tp1_price = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px))*2);
-                    return (7500 / buy_px) * (tp1_price - buy_px) + (2500 / buy_px) * (last_px - buy_px);
-                }}
-                return (10000 / buy_px) * (last_px - buy_px);
-            }};
-
             // ==========================================
             // 📊 頂部 4 個總計方塊 & 🎯 機構級核心 KPI
             // ==========================================
             let totalClosedPnl = 0, wins = 0, totalOpenPnl = 0;
+            
+            // --- 新增：核心 KPI 變數 ---
             let grossProfit = 0, grossLoss = 0;
             let cumulativePnl = 0, peakCapital = 0, maxDrawdown = 0;
             
-            let chronologicalCloseds = [...closeds].sort((a, b) => (a.close_date || a.date).localeCompare(b.close_date || b.date));
+            // 為了準確計算最大回撤 (MDD)，必須建立一個按時間順序排列的陣列
+            let chronologicalCloseds = [...closeds].sort((a, b) => {{
+                let dateA = a.close_date || a.date;
+                let dateB = b.close_date || b.date;
+                return dateA.localeCompare(dateB);
+            }});
 
             chronologicalCloseds.forEach(t => {{
-                let tradePnl = calcTruePnl(t); // 💡 使用真實 P&L
+                const tradePnl = calcTruePnl(t);
                 totalClosedPnl += tradePnl;
                 
-                if (tradePnl > 0) wins++; // 💡 只要總利潤 > 0 就是贏！杜絕勝率錯判
+                if (tradePnl > 0) wins++;
 
+                // 計算 Profit Factor 元素
                 if (tradePnl > 0) grossProfit += tradePnl;
                 else grossLoss += Math.abs(tradePnl);
 
+                // 計算 Max Drawdown
                 cumulativePnl += tradePnl;
                 if (cumulativePnl > peakCapital) peakCapital = cumulativePnl;
                 let drawdown = peakCapital - cumulativePnl;
                 if (drawdown > maxDrawdown) maxDrawdown = drawdown;
             }});
             
-            opens.forEach(t => {{ totalOpenPnl += calcTruePnl(t); }});
+            opens.forEach(t => {{
+                let buy_px = t.px;
+                let last_px = t.last_px;
+                // 🌟 混合會計公式：xx% 已鎖定，xx% 隨現價浮動
+                let tp1 = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px))*PARTIAL_TP_R); 
+                let pnl = t.partial_tp_hit ? 
+                    ((TICKETSIZE * PARTIAL_TP_PCT / buy_px) * (tp1 - buy_px) + (TICKETSIZE * (1 - PARTIAL_TP_PCT) / buy_px) * (last_px - buy_px)) :
+                    (TICKETSIZE / buy_px) * (last_px - buy_px);
+                totalOpenPnl += pnl;
+            }});
 
+            // --- 計算 KPI 最終數值 ---
             const totalClosedCount = closeds.length;
             const profitFactor = grossLoss > 0 ? (grossProfit / grossLoss).toFixed(2) : "999.99";
             const winRateDec = totalClosedCount > 0 ? (wins / totalClosedCount) : 0;
@@ -2384,9 +2590,10 @@ function renderThemesTab() {{
             const avgLoss = (totalClosedCount - wins) > 0 ? (grossLoss / (totalClosedCount - wins)) : 0;
             const expectancy = ((winRateDec * avgWin) - (lossRateDec * avgLoss)).toFixed(2);
 
+            // --- 渲染原本的 4 個舊方塊 ---
             const winRate = totalClosedCount > 0 ? (winRateDec * 100).toFixed(1) : 0;
-            const closedPct = totalClosedCount > 0 ? ((totalClosedPnl / (totalClosedCount * 10000)) * 100).toFixed(2) : "0.00";
-            const openPct = opens.length > 0 ? ((totalOpenPnl / (opens.length * 10000)) * 100).toFixed(2) : "0.00";
+            const closedPct = totalClosedCount > 0 ? ((totalClosedPnl / (totalClosedCount * TICKETSIZE)) * 100).toFixed(2) : "0.00";
+            const openPct = opens.length > 0 ? ((totalOpenPnl / (opens.length * TICKETSIZE)) * 100).toFixed(2) : "0.00";
 
             const closedSign = totalClosedPnl >= 0 ? '+' : '';
             const openSign = totalOpenPnl >= 0 ? '+' : '';
@@ -2399,7 +2606,7 @@ function renderThemesTab() {{
                     <div class="text-2xl font-black ${{closedColor}}">${{closedSign}}$${{totalClosedPnl.toFixed(0)}} <span class="text-sm">(${{closedSign}}${{closedPct}}%)</span></div>
                 </div>
                 <div class="bg-slate-800/50 p-4 rounded-xl border border-slate-700 text-center">
-                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">歷史勝率 (真實P&L)</div>
+                    <div class="text-[10px] text-slate-400 uppercase font-bold mb-1">歷史勝率</div>
                     <div class="text-2xl font-black text-white">${{winRate}}%</div>
                     <div class="text-[9px] text-slate-500 mt-1">${{wins}} 贏 / ${{totalClosedCount - wins}} 輸</div>
                 </div>
@@ -2413,6 +2620,7 @@ function renderThemesTab() {{
                 </div>
             `;
 
+            // --- 渲染新增的 3 個 KPI 方塊 ---
             const kpiContainer = document.getElementById('kpi-scorecard');
             if (kpiContainer) {{
                 const pfColor = profitFactor >= 2 ? 'text-fuchsia-400' : (profitFactor >= 1.5 ? 'text-emerald-400' : 'text-amber-400');
@@ -2441,15 +2649,21 @@ function renderThemesTab() {{
                 `;
             }}
 
+            // ==========================================
+            // 🎯 1. 生成策略卡片
+            // ==========================================
             const strategyStats = {{}};
             closeds.forEach(t => {{
                 const strat = t.tag || '未分類';
-                if (!strategyStats[strat]) strategyStats[strat] = {{ trades: 0, wins: 0, pnl: 0, deployed: 0 }};
-                const tradePnl = calcTruePnl(t);
+                if (!strategyStats[strat]) {{
+                    strategyStats[strat] = {{ trades: 0, wins: 0, pnl: 0, deployed: 0 }};
+                }}
                 strategyStats[strat].trades += 1;
-                if (tradePnl > 0) strategyStats[strat].wins += 1;
+                
+                const tradePnl = calcTruePnl(t);
                 strategyStats[strat].pnl += tradePnl;
-                strategyStats[strat].deployed += 10000;
+                strategyStats[strat].deployed += TICKETSIZE;
+                if (tradePnl > 0) strategyStats[strat].wins += 1;
             }});
 
             const strategyHtml = Object.keys(strategyStats).map(strat => {{
@@ -2473,6 +2687,9 @@ function renderThemesTab() {{
             }}).join('');
             document.getElementById('strategy-stats-container').innerHTML = strategyHtml || '<div class="text-xs text-slate-500 italic p-2">暫無策略數據</div>';
 
+            // ==========================================
+            // 📈 2. 按進場指標 (RS / RSI) 分組統計
+            // ==========================================
             const metricStats = {{
                 rs: {{ '95-99 (極強)': {{ trades: 0, wins: 0, pnl: 0 }}, '90-94 (強勢)': {{ trades: 0, wins: 0, pnl: 0 }}, '80-89 (中等)': {{ trades: 0, wins: 0, pnl: 0 }}, '< 80 (較弱)': {{ trades: 0, wins: 0, pnl: 0 }} }},
                 rsi: {{ '< 20 (極度超賣)': {{ trades: 0, wins: 0, pnl: 0 }}, '20-25 (嚴重超賣)': {{ trades: 0, wins: 0, pnl: 0 }}, '> 25 (輕微超賣)': {{ trades: 0, wins: 0, pnl: 0 }} }}
@@ -2480,7 +2697,7 @@ function renderThemesTab() {{
 
             closeds.forEach(t => {{
                 const tradePnl = calcTruePnl(t);
-                const isWin = tradePnl > 0;
+                const isWin = (tradePnl > 0);
                 
                 if (t.entry_metric) {{
                     if (t.entry_metric.startsWith('RS:')) {{
@@ -2528,6 +2745,9 @@ function renderThemesTab() {{
             if(rsTbody) rsTbody.innerHTML = renderMetricRows(metricStats.rs);
             if(rsiTbody) rsiTbody.innerHTML = renderMetricRows(metricStats.rsi);
 
+            // ==========================================
+            // 🧬 獨立特徵因子分析 (Feature Matrix) 計算
+            // ==========================================
             const featureStats = {{}};
             const ALL_STRATS = ["🏆 VCP 突破", "💥 BB 擠壓", "⚡ 缺口動能", "📉 極度超賣"];
             
@@ -2544,7 +2764,7 @@ function renderThemesTab() {{
                 if (!strat || !featureStats[strat]) return;
                 
                 const tradePnl = calcTruePnl(t);
-                const isWin = tradePnl > 0;
+                const isWin = (tradePnl > 0);
                 
                 if (t.features) {{
                     if (t.features.mss) {{ featureStats[strat].mss.t++; if(isWin) featureStats[strat].mss.w++; featureStats[strat].mss.pnl += tradePnl; }}
@@ -2579,13 +2799,17 @@ function renderThemesTab() {{
                 `).join('');
             }}
 
+            // ==========================================
+            // 🔥 特定指標組合 (Combination Matrix) 計算
+            // ==========================================
             const comboStats = {{}};
+            
             ALL_STRATS.forEach(s => {{
                 comboStats[s] = {{
-                    'mss_smc': {{ t: 0, w: 0, pnl: 0 }},
-                    'mss_amd': {{ t: 0, w: 0, pnl: 0 }},
-                    'smc_amd': {{ t: 0, w: 0, pnl: 0 }},
-                    'all_3': {{ t: 0, w: 0, pnl: 0 }}    
+                    'mss_smc': {{ t: 0, w: 0, pnl: 0 }}, // 只中 MSS + SMC
+                    'mss_amd': {{ t: 0, w: 0, pnl: 0 }}, // 只中 MSS + AMD
+                    'smc_amd': {{ t: 0, w: 0, pnl: 0 }}, // 只中 SMC + AMD
+                    'all_3': {{ t: 0, w: 0, pnl: 0 }}    // 3個全中
                 }};
             }});
 
@@ -2594,21 +2818,31 @@ function renderThemesTab() {{
                 if (!strat || !comboStats[strat]) return;
                 
                 const tradePnl = calcTruePnl(t);
-                const isWin = tradePnl > 0;
+                const isWin = (tradePnl > 0);
                 
                 if (t.features) {{
+                    // 將 Boolean 值轉做 true/false 方便判定
                     const hasMSS = !!t.features.mss;
                     const hasSMC = !!t.features.smc;
                     const hasAMD = !!t.features.amd;
                     
+                    // 精準將單子分類落對應嘅特定組合 (Mutually Exclusive)
                     if (hasMSS && hasSMC && hasAMD) {{
-                        comboStats[strat].all_3.t++; if(isWin) comboStats[strat].all_3.w++; comboStats[strat].all_3.pnl += tradePnl;
+                        comboStats[strat].all_3.t++;
+                        if(isWin) comboStats[strat].all_3.w++;
+                        comboStats[strat].all_3.pnl += tradePnl;
                     }} else if (hasMSS && hasSMC && !hasAMD) {{
-                        comboStats[strat].mss_smc.t++; if(isWin) comboStats[strat].mss_smc.w++; comboStats[strat].mss_smc.pnl += tradePnl;
+                        comboStats[strat].mss_smc.t++;
+                        if(isWin) comboStats[strat].mss_smc.w++;
+                        comboStats[strat].mss_smc.pnl += tradePnl;
                     }} else if (hasMSS && !hasSMC && hasAMD) {{
-                        comboStats[strat].mss_amd.t++; if(isWin) comboStats[strat].mss_amd.w++; comboStats[strat].mss_amd.pnl += tradePnl;
+                        comboStats[strat].mss_amd.t++;
+                        if(isWin) comboStats[strat].mss_amd.w++;
+                        comboStats[strat].mss_amd.pnl += tradePnl;
                     }} else if (!hasMSS && hasSMC && hasAMD) {{
-                        comboStats[strat].smc_amd.t++; if(isWin) comboStats[strat].smc_amd.w++; comboStats[strat].smc_amd.pnl += tradePnl;
+                        comboStats[strat].smc_amd.t++;
+                        if(isWin) comboStats[strat].smc_amd.w++;
+                        comboStats[strat].smc_amd.pnl += tradePnl;
                     }}
                 }}
             }});
@@ -2625,10 +2859,9 @@ function renderThemesTab() {{
                     </tr>
                 `).join('');
             }}
-        }}
 
             // ==========================================
-            // 📂 3. 渲染 Open Positions (加入過濾/排序/板塊/市值/75%)
+            // 📂 3. 渲染 Open Positions (加入過濾/排序/板塊/市值/xx%)
             // ==========================================
             const openThead = openTbody.parentElement.querySelector('thead');
             openThead.innerHTML = `
@@ -2651,15 +2884,15 @@ function renderThemesTab() {{
                 
                 // 🌟 75/25 混合會計公式
                 if (t.partial_tp_hit) {{
-                    let tp1_price = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px)) * 2);
-                    let pnl_closed = (7500 / buy_px) * (tp1_price - buy_px);
-                    let pnl_floating = (2500 / buy_px) * (last_px - buy_px);
+                    let tp1_price = t.tp1_price || (buy_px + (buy_px - (t.initial_sl || buy_px)) * PARTIAL_TP_R);
+                    let pnl_closed = (TICKETSIZE * PARTIAL_TP_PCT / buy_px) * (tp1_price - buy_px);
+                    let pnl_floating = (TICKETSIZE * (1 - PARTIAL_TP_PCT) / buy_px) * (last_px - buy_px);
                     pnl = pnl_closed + pnl_floating; 
                 }} else {{
-                    pnl = (10000 / buy_px) * (last_px - buy_px);
+                    pnl = (TICKETSIZE / buy_px) * (last_px - buy_px);
                 }}
                 
-                let pnlPct = (pnl / 10000 * 100).toFixed(2);
+                let pnlPct = (pnl / TICKETSIZE * 100).toFixed(2);
                 const pColor = pnl >= 0 ? 'text-emerald-400' : 'text-red-400';
                 
                 // 1. 動態生成 Source 標籤
@@ -2690,7 +2923,7 @@ function renderThemesTab() {{
                     <td class="p-2 text-[10px] text-slate-400 font-mono text-right">${{formatMcap(t.mcap)}}</td>
                     <td class="p-2 text-center">
                         ${{t.partial_tp_hit 
-                            ? '<span class="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 text-[10px] font-black">🎯 75% 已止盈 (25% 放飛)</span>' 
+                            ? '<span class="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 text-[10px] font-black">🎯 ${{Math.round(PARTIAL_PCT*100)}}% 已止盈 (${{Math.round((1-PARTIAL_PCT)*100)}}% 放飛)</span>` 
                             : '<span class="text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[10px] font-black">⏳ 100% 正常持倉中</span>'
                         }}
                     </td>
@@ -2715,9 +2948,9 @@ function renderThemesTab() {{
             }}
 
             closedTbody.innerHTML = closeds.length === 0 ? '<tr><td colspan="10" class="p-4 text-center text-slate-500">無結案紀錄</td></tr>' : closeds.slice(0,50).map(t => {{
-                const pnl = (10000 / t.px) * (t.last_px - t.px);
-                const pnlPct = (pnl / 10000 * 100).toFixed(2);
-                const isWin = t.status.includes('✅');
+                const pnl = calcTruePnl(t);
+                const pnlPct = (pnl / TICKETSIZE * 100).toFixed(2);
+                const isWin = (pnl > 0);
                 const pColor = isWin ? 'text-emerald-400' : 'text-red-400';
                 const isJp = t.tk.endsWith('.T');
                 const unit = isJp ? '¥' : '$';
@@ -2732,6 +2965,7 @@ function renderThemesTab() {{
                     <td class="p-2">${{(() => {{
                         if (t.status.includes("MAX TP")) return '<span class="text-fuchsia-400 font-bold">🏆 終極止賺</span>';
                         if (t.status.includes("TRAIL EXIT")) return '<span class="text-blue-400 font-bold">🚀 放飛平倉</span>';
+                        if (t.status.includes("⏱️")) return '<span class="text-slate-400 font-bold">⏱️ 時間止損</span>'; 
                         if (t.status.includes("✅")) return '<span class="text-emerald-400 font-bold">🎯 止盈</span>';
                         return '<span class="text-red-400 font-bold">🛑 止損</span>';
                     }})()}}</td>
@@ -2748,3 +2982,10 @@ function renderThemesTab() {{
 
 with open(os.path.join(OUTPUT_DIR, "index.html"), "w", encoding="utf-8") as f: f.write(html)
 print(f"\n🎉 UAT 時光機版建置完成！")
+
+try:
+    with open(INFO_CACHE_FILE, "w", encoding="utf-8") as f:
+        json.dump(STOCK_INFO_CACHE, f, ensure_ascii=False)
+    print(f"💾 已儲存 {len(STOCK_INFO_CACHE)} 隻股票資料 cache")
+except Exception as e:
+    print(f"⚠️ 股票資料 cache 寫入失敗: {e}")
