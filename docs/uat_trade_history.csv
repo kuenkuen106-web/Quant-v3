@@ -1,3 +1,6 @@
-﻿date,tk,px,sl,tp,initial_sl,tp1_price,last_px,status,tag,entry_metric,curr_metric,sources,sector,mcap,feature_score,features
-2026-08-10,ETSY,85.55,81.05,99.04,81.05,92.3,85.55,OPEN,💥 BB 擠壓,,,['S&P600_小型'],N/A,0,1,"{'mss': False, 'smc': False, 'amd': True, 'ml_rsi': 57.8}"
-2026-08-10,SEZL,118.02,100.69,170.02,100.69,135.35,118.02,OPEN,📉 極度超賣,RSI: 25,RSI: 25,['S&P600_小型'],N/A,0,1,"{'mss': False, 'smc': True, 'amd': False, 'ml_rsi': 25.6}"
+﻿date,tk,px,sl,tp,initial_sl,tp1_price,last_px,status,tag,entry_metric,curr_metric,sources,sector,mcap,feature_score,features,days_held,partial_tp_hit,close_date
+2026-08-10,ETSY,85.55,81.05,99.04,81.05,92.3,81.05,❌ STOP LOSS,💥 BB 擠壓,,,['S&P600_小型'],N/A,0,1,"{'mss': False, 'smc': False, 'amd': True, 'ml_rsi': 57.8}",1,False,2026-08-10
+2026-08-10,SEZL,118.02,100.69,170.02,100.69,135.35,118.0,OPEN,📉 極度超賣,RSI: 25,RSI: 25,['S&P600_小型'],N/A,0,1,"{'mss': False, 'smc': True, 'amd': False, 'ml_rsi': 25.6}",1,False,
+2026-08-10,6258.T,3865.0,3583.14,4710.57,3583.14,4287.79,3865.0,OPEN,⚡ 缺口動能,RS: 92,RS: 92,['TOPIX_Small500_小型'],N/A,0,2,"{'mss': True, 'smc': True, 'amd': False, 'ml_rsi': 76.6}",,,
+2026-08-10,6869.T,1980.0,1892.5,2242.5,1892.5,2111.25,1980.0,OPEN,⚡ 缺口動能,RS: 79,RS: 79,['TOPIX_Mid400_中型'],N/A,0,2,"{'mss': True, 'smc': True, 'amd': False, 'ml_rsi': 76.5}",,,
+2026-08-10,7456.T,6850.0,6420.0,8140.0,6420.0,7495.0,6850.0,OPEN,⚡ 缺口動能,RS: 76,RS: 76,['TOPIX_Small500_小型'],N/A,0,1,"{'mss': True, 'smc': False, 'amd': False, 'ml_rsi': 76.9}",,,

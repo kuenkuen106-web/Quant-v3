@@ -7,8 +7,8 @@
         "tp": 99.04,
         "initial_sl": 81.05,
         "tp1_price": 92.3,
-        "last_px": 85.55,
-        "status": "OPEN",
+        "last_px": 81.05,
+        "status": "\u274c STOP LOSS",
         "tag": "\ud83d\udca5 BB \u64e0\u58d3",
         "entry_metric": "",
         "curr_metric": "",
@@ -23,7 +23,10 @@
             "smc": false,
             "amd": true,
             "ml_rsi": 57.8
-        }
+        },
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-10"
     },
     {
         "date": "2026-08-10",
@@ -33,7 +36,7 @@
         "tp": 170.02,
         "initial_sl": 100.69,
         "tp1_price": 135.35,
-        "last_px": 118.02,
+        "last_px": 118.0,
         "status": "OPEN",
         "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
         "entry_metric": "RSI: 25",
@@ -49,6 +52,86 @@
             "smc": true,
             "amd": false,
             "ml_rsi": 25.6
+        },
+        "days_held": 1,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-10",
+        "tk": "6258.T",
+        "px": 3865.0,
+        "sl": 3583.14,
+        "tp": 4710.57,
+        "initial_sl": 3583.14,
+        "tp1_price": 4287.79,
+        "last_px": 3865.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 92",
+        "curr_metric": "RS: 92",
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 76.6
+        }
+    },
+    {
+        "date": "2026-08-10",
+        "tk": "6869.T",
+        "px": 1980.0,
+        "sl": 1892.5,
+        "tp": 2242.5,
+        "initial_sl": 1892.5,
+        "tp1_price": 2111.25,
+        "last_px": 1980.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 79",
+        "curr_metric": "RS: 79",
+        "sources": [
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 76.5
+        }
+    },
+    {
+        "date": "2026-08-10",
+        "tk": "7456.T",
+        "px": 6850.0,
+        "sl": 6420.0,
+        "tp": 8140.0,
+        "initial_sl": 6420.0,
+        "tp1_price": 7495.0,
+        "last_px": 6850.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 76",
+        "curr_metric": "RS: 76",
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 1,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 76.9
         }
     }
 ]
