@@ -1,81 +1,57 @@
-name: v3 UAT Backtest Loop
+name: UAT 回測 (逐日時光機)
+
 on:
   workflow_dispatch:
     inputs:
-      start_day:
-        description: '開始天數 (例如 600)'
+      start_days:
+        description: '回溯起點（曆日，730 ≈ 500 交易日）'
         required: true
-        default: '600'
-      end_day:
-        description: '結束天數 (例如 0)'
+        default: '730'
+      exit_mode:
+        description: '出場方案 (A_current / B_runner)'
         required: true
-        default: '0'
-
-concurrency:
-  group: git-push-group
-  cancel-in-progress: false
-
-permissions:
-  contents: write
+        default: 'B_runner'
 
 jobs:
-  run-strategy:
+  backtest:
     runs-on: ubuntu-latest
+    timeout-minutes: 350        # GitHub 上限 6 小時
+
     steps:
-      - name: 📥 讀取代碼 (Checkout)
-        uses: actions/checkout@v4 
+      - uses: actions/checkout@v4
 
-      - name: 🐍 設定 Python 環境
-        uses: actions/setup-python@v5
+      - uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.11'
 
-      # 🌟 官方標準寫法：將日期寫入 GITHUB_OUTPUT，避免 env 讀取不到的錯誤
-      - name: 獲取今日日期
-        id: date_step
-        run: echo "today=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
+      - name: 安裝套件
+        run: |
+          python -m pip install --upgrade pip
+          pip install pandas numpy yfinance matplotlib requests lxml html5lib fake-useragent
 
-      # 🌟 使用 steps.date_step.outputs.today 作為每日唯一 Key
-      - name: 💾 Cache market data
-        uses: actions/cache@v3
-        with:
-          path: docs/UAT/market_data_cache.pkl
-          key: ${{ runner.os }}-market-data-${{ steps.date_step.outputs.today }}
+      - name: 清空舊回測紀錄（重要！唔清會撈亂新舊策略嘅單）
+        run: |
+          mkdir -p docs/UAT/charts
+          rm -f docs/UAT/uat_trade_history.json
+          rm -f docs/UAT/uat_trade_history.csv
 
-      - name: 📦 安裝依賴工具
-        run: pip install -r requirements.txt
-
-      - name: 🚀 執行量化掃描 (大迴圈模式)
+      - name: 逐日跑回測
         env:
           DISCORD_BACKTEST_WEBHOOK_URL: ${{ secrets.DISCORD_BACKTEST_WEBHOOK_URL }}
           DISCORD_BACKTEST_SUMMARY_WEBHOOK: ${{ secrets.DISCORD_BACKTEST_SUMMARY_WEBHOOK }}
-          START: ${{ github.event.inputs.start_day }}
-          END: ${{ github.event.inputs.end_day }}
+          EXIT_MODE: ${{ github.event.inputs.exit_mode }}
         run: |
-          for (( i=$START; i>=$END; i-- ))
-          do
-            echo "⏰ 正在啟動時光機：回溯 $i 天..."
-            export UAT_DAYS_AGO=$i
-            python LHK_trading_script_backtest_v3.py
-            sleep 3
+          START=${{ github.event.inputs.start_days }}
+          for d in $(seq $START -1 0); do
+            if [ $((d % 50)) -eq 0 ]; then echo "===== 進度：剩餘 $d 日 ====="; fi
+            UAT_DAYS_AGO=$d python LHK_trading_script_backtest_v3.py
+            if [ $? -ne 0 ]; then echo "❌ 第 $d 日失敗，中止"; exit 1; fi
           done
 
-      - name: 💾 更新 Dashboard 網頁檔案
+      - name: 提交結果
         run: |
-          git config --global user.name "github-actions[bot]"
-          git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # 1. 強制設定忽略清單，確保 Git 永遠唔會理個 pkl 檔
-          echo "market_data_cache.pkl" > docs/UAT/.gitignore
-          
-          # 2. 將所有 docs 裡面嘅改動加入暫存區
-          git add docs/
-          
-          # 3. 🌟 關鍵修正：先 Commit！將本地變更正式打包，清空工作台
-          git commit -m "Auto-update Dashboard" || echo "No changes to commit"
-          
-          # 4. 🌟 然後先 Pull：因為工作台乾淨咗，Rebase 會完美將遠端嘅改動攝入去你個 Commit 之前
-          git pull origin main --rebase
-          
-          # 5. 提交變更並推送
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/UAT
+          git commit -m "UAT 回測 ${{ github.event.inputs.exit_mode }} $(date +%F)" || echo "無變更"
           git push
