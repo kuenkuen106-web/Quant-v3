@@ -1,0 +1,1487 @@
+[
+    {
+        "date": "2026-07-22",
+        "tk": "TFIN",
+        "px": 81.08,
+        "sl": 76.45,
+        "tp": null,
+        "initial_sl": 76.45,
+        "tp1_price": 90.34,
+        "last_px": 76.45,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83d\udca5 BB \u64e0\u58d3",
+        "entry_metric": "",
+        "curr_metric": "RS: 70",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 1,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 61.2
+        },
+        "period": "FWD",
+        "days_held": 5,
+        "partial_tp_hit": false,
+        "close_date": "2026-07-27"
+    },
+    {
+        "date": "2026-07-23",
+        "tk": "8544.T",
+        "px": 2778.0,
+        "sl": 2648.83,
+        "tp": null,
+        "initial_sl": 2648.83,
+        "tp1_price": 3036.34,
+        "last_px": 2648.83,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "RS: 97",
+        "fx_entry": 163.081,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 58.4
+        },
+        "period": "FWD",
+        "days_held": 8,
+        "partial_tp_hit": false,
+        "close_date": "2026-07-31",
+        "fx_exit": 160.183
+    },
+    {
+        "date": "2026-07-24",
+        "tk": "RNG",
+        "px": 48.21,
+        "sl": 44.28,
+        "tp": null,
+        "initial_sl": 44.28,
+        "tp1_price": 56.08,
+        "last_px": 44.28,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 70.3
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-07-24"
+    },
+    {
+        "date": "2026-07-24",
+        "tk": "1518.T",
+        "px": 2241.0,
+        "sl": 2241.0,
+        "tp": 2461.29,
+        "initial_sl": 2167.57,
+        "tp1_price": 2387.86,
+        "last_px": 2240.0,
+        "status": "\u2705 TRAIL EXIT",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 92",
+        "curr_metric": "RS: 92",
+        "fx_entry": 163.832,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 90.4
+        },
+        "period": "FWD",
+        "days_held": 3,
+        "partial_tp_hit": true,
+        "close_date": "2026-07-27",
+        "fx_exit": 163.611
+    },
+    {
+        "date": "2026-07-24",
+        "tk": "RNG",
+        "px": 48.21,
+        "sl": 44.28,
+        "tp": null,
+        "initial_sl": 44.28,
+        "tp1_price": 56.08,
+        "last_px": 44.28,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 70.3
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-07-24"
+    },
+    {
+        "date": "2026-07-24",
+        "tk": "RNG",
+        "px": 48.21,
+        "sl": 48.21,
+        "tp": null,
+        "initial_sl": 44.28,
+        "tp1_price": 56.08,
+        "last_px": 64.1,
+        "status": "OPEN",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "RS: 97",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 70.3
+        },
+        "period": "FWD",
+        "days_held": 15,
+        "partial_tp_hit": true
+    },
+    {
+        "date": "2026-07-29",
+        "tk": "CAKE",
+        "px": 101.14,
+        "sl": 94.47,
+        "tp": 121.16,
+        "initial_sl": 94.47,
+        "tp1_price": 114.48,
+        "last_px": 111.19,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 94",
+        "curr_metric": "RS: 95",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Consumer Cyclical",
+        "mcap": 5532884992,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 84.5
+        },
+        "period": "FWD",
+        "days_held": 12,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-07-29",
+        "tk": "GKOS",
+        "px": 161.66,
+        "sl": 161.66,
+        "tp": null,
+        "initial_sl": 150.94,
+        "tp1_price": 183.1,
+        "last_px": 181.42,
+        "status": "OPEN",
+        "tag": "\ud83d\udca5 BB \u64e0\u58d3",
+        "entry_metric": "",
+        "curr_metric": "RS: 94",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Healthcare",
+        "mcap": 10700865536,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 61.5
+        },
+        "period": "FWD",
+        "days_held": 12,
+        "partial_tp_hit": true
+    },
+    {
+        "date": "2026-07-29",
+        "tk": "SIRI",
+        "px": 32.59,
+        "sl": 31.48,
+        "tp": null,
+        "initial_sl": 31.48,
+        "tp1_price": 34.81,
+        "last_px": 31.48,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "",
+        "sources": [
+            "S&P400_\u4e2d\u578b"
+        ],
+        "sector": "Communication Services",
+        "mcap": 9700785152,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 66.0
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-07-30"
+    },
+    {
+        "date": "2026-07-29",
+        "tk": "VRT",
+        "px": 223.04,
+        "sl": 199.22,
+        "tp": 294.51,
+        "initial_sl": 199.22,
+        "tp1_price": 270.68,
+        "last_px": 241.57,
+        "status": "\u274c \u89f8\u767c 3 \u65e5\u6642\u9593\u6b62\u640d",
+        "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
+        "entry_metric": "RSI: 13",
+        "curr_metric": "RSI: 26",
+        "sources": [
+            "S&P500_\u5927\u76e4"
+        ],
+        "sector": "Industrials",
+        "mcap": 103985307648,
+        "feature_score": 1,
+        "features": {
+            "mss": false,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 13.6
+        },
+        "period": "FWD",
+        "days_held": 3,
+        "partial_tp_hit": false,
+        "close_date": "2026-07-31"
+    },
+    {
+        "date": "2026-07-29",
+        "tk": "YOU",
+        "px": 58.39,
+        "sl": 54.32,
+        "tp": null,
+        "initial_sl": 54.32,
+        "tp1_price": 66.53,
+        "last_px": 54.32,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "RS: 94",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Technology",
+        "mcap": 6953707520,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 55.8
+        },
+        "period": "FWD",
+        "days_held": 2,
+        "partial_tp_hit": false,
+        "close_date": "2026-07-31"
+    },
+    {
+        "date": "2026-07-29",
+        "tk": "7956.T",
+        "px": 2102.5,
+        "sl": 2055.31,
+        "tp": null,
+        "initial_sl": 2055.31,
+        "tp1_price": 2196.88,
+        "last_px": 2055.31,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "",
+        "fx_entry": 163.864,
+        "sources": [
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "Consumer Defensive",
+        "mcap": 249100550144,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 54.7
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-07-30",
+        "fx_exit": 163.3
+    },
+    {
+        "date": "2026-07-30",
+        "tk": "CORT",
+        "px": 118.32,
+        "sl": 107.45,
+        "tp": 150.93,
+        "initial_sl": 107.45,
+        "tp1_price": 140.06,
+        "last_px": 107.45,
+        "status": "\u274c STOP LOSS",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 98",
+        "curr_metric": "RS: 98",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Healthcare",
+        "mcap": 12348080128,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 70.9
+        },
+        "period": "FWD",
+        "days_held": 7,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-06"
+    },
+    {
+        "date": "2026-07-30",
+        "tk": "VCEL",
+        "px": 47.61,
+        "sl": 45.05,
+        "tp": null,
+        "initial_sl": 45.05,
+        "tp1_price": 52.73,
+        "last_px": 45.05,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83d\udca5 BB \u64e0\u58d3",
+        "entry_metric": "",
+        "curr_metric": "RS: 77",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Healthcare",
+        "mcap": 2250530816,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 52.9
+        },
+        "period": "FWD",
+        "days_held": 6,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-05"
+    },
+    {
+        "date": "2026-07-30",
+        "tk": "3673.T",
+        "px": 452.0,
+        "sl": 437.0,
+        "tp": null,
+        "initial_sl": 437.0,
+        "tp1_price": 482.0,
+        "last_px": 437.0,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83d\udca5 BB \u64e0\u58d3",
+        "entry_metric": "",
+        "curr_metric": "RS: 82",
+        "fx_entry": 163.3,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Technology",
+        "mcap": 79108694016,
+        "feature_score": 1,
+        "features": {
+            "mss": false,
+            "smc": false,
+            "amd": true,
+            "ml_rsi": 63.2
+        },
+        "period": "FWD",
+        "days_held": 4,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-03",
+        "fx_exit": 157.582
+    },
+    {
+        "date": "2026-07-30",
+        "tk": "9678.T",
+        "px": 5220.0,
+        "sl": 5078.57,
+        "tp": null,
+        "initial_sl": 5078.57,
+        "tp1_price": 5502.86,
+        "last_px": 5440.0,
+        "status": "OPEN",
+        "tag": "\ud83d\udca5 BB \u64e0\u58d3",
+        "entry_metric": "",
+        "curr_metric": "RS: 87",
+        "fx_entry": 163.3,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Industrials",
+        "mcap": 186379714560,
+        "feature_score": 1,
+        "features": {
+            "mss": false,
+            "smc": false,
+            "amd": true,
+            "ml_rsi": 56.9
+        },
+        "period": "FWD",
+        "days_held": 11,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-07-31",
+        "tk": "2914.T",
+        "px": 7135.0,
+        "sl": 6855.71,
+        "tp": 7972.86,
+        "initial_sl": 6855.71,
+        "tp1_price": 7693.58,
+        "last_px": 6855.71,
+        "status": "\u274c STOP LOSS",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 82",
+        "curr_metric": "RS: 81",
+        "fx_entry": 160.183,
+        "sources": [
+            "NK225"
+        ],
+        "sector": "Consumer Defensive",
+        "mcap": 12596161806336,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 85.5
+        },
+        "period": "FWD",
+        "days_held": 4,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-04",
+        "fx_exit": 157.529
+    },
+    {
+        "date": "2026-07-31",
+        "tk": "6508.T",
+        "px": 9620.0,
+        "sl": 9620.0,
+        "tp": 12285.71,
+        "initial_sl": 8731.43,
+        "tp1_price": 11397.14,
+        "last_px": 10790.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 91",
+        "curr_metric": "RS: 95",
+        "fx_entry": 160.183,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Industrials",
+        "mcap": 489477046272,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 57.8
+        },
+        "period": "FWD",
+        "days_held": 10,
+        "partial_tp_hit": true
+    },
+    {
+        "date": "2026-07-31",
+        "tk": "9962.T",
+        "px": 3861.0,
+        "sl": 3566.0,
+        "tp": 4746.0,
+        "initial_sl": 3566.0,
+        "tp1_price": 4451.0,
+        "last_px": 3697.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 90",
+        "curr_metric": "RS: 87",
+        "fx_entry": 160.183,
+        "sources": [
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "Industrials",
+        "mcap": 975300329472,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": true,
+            "ml_rsi": 49.6
+        },
+        "period": "FWD",
+        "days_held": 10,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-03",
+        "tk": "WT",
+        "px": 20.99,
+        "sl": 19.72,
+        "tp": null,
+        "initial_sl": 19.72,
+        "tp1_price": 23.53,
+        "last_px": 22.19,
+        "status": "OPEN",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "RS: 88",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Financial Services",
+        "mcap": 3362053888,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 60.3
+        },
+        "period": "FWD",
+        "days_held": 7,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-03",
+        "tk": "5332.T",
+        "px": 6171.0,
+        "sl": 5725.29,
+        "tp": 7508.14,
+        "initial_sl": 5725.29,
+        "tp1_price": 7062.42,
+        "last_px": 6528.0,
+        "status": "\u274c \u89f8\u767c 3 \u65e5\u6642\u9593\u6b62\u640d",
+        "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
+        "entry_metric": "RSI: 17",
+        "curr_metric": "RSI: 31",
+        "fx_entry": 157.582,
+        "sources": [
+            "NK225",
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "Industrials",
+        "mcap": 1077821636608,
+        "feature_score": 0,
+        "features": {
+            "mss": false,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 17.6
+        },
+        "period": "FWD",
+        "days_held": 3,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-06",
+        "fx_exit": 157.6
+    },
+    {
+        "date": "2026-08-03",
+        "tk": "6250.T",
+        "px": 3950.0,
+        "sl": 3950.0,
+        "tp": null,
+        "initial_sl": 3812.14,
+        "tp1_price": 4225.72,
+        "last_px": 4410.0,
+        "status": "OPEN",
+        "tag": "\ud83d\udca5 BB \u64e0\u58d3",
+        "entry_metric": "",
+        "curr_metric": "RS: 90",
+        "fx_entry": 157.582,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Industrials",
+        "mcap": 180400144384,
+        "feature_score": 1,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 64.3
+        },
+        "period": "FWD",
+        "days_held": 7,
+        "partial_tp_hit": true
+    },
+    {
+        "date": "2026-08-03",
+        "tk": "6723.T",
+        "px": 3905.0,
+        "sl": 3371.71,
+        "tp": 5504.86,
+        "initial_sl": 3371.71,
+        "tp1_price": 4971.58,
+        "last_px": 3825.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 93",
+        "curr_metric": "RS: 93",
+        "fx_entry": 157.582,
+        "sources": [
+            "NK225"
+        ],
+        "sector": "Technology",
+        "mcap": 6990146306048,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": true,
+            "ml_rsi": 41.7
+        },
+        "period": "FWD",
+        "days_held": 7,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-03",
+        "tk": "6952.T",
+        "px": 2164.5,
+        "sl": 2060.36,
+        "tp": 2476.93,
+        "initial_sl": 2060.36,
+        "tp1_price": 2372.78,
+        "last_px": 2311.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 93",
+        "curr_metric": "RS: 94",
+        "fx_entry": 157.582,
+        "sources": [
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "Technology",
+        "mcap": 506813513728,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 75.8
+        },
+        "period": "FWD",
+        "days_held": 7,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-04",
+        "tk": "PPLI",
+        "px": 46.43,
+        "sl": 44.39,
+        "tp": null,
+        "initial_sl": 44.39,
+        "tp1_price": 50.51,
+        "last_px": 44.39,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Communication Services",
+        "mcap": 3027703296,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 52.8
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-05"
+    },
+    {
+        "date": "2026-08-05",
+        "tk": "3110.T",
+        "px": 3555.0,
+        "sl": 3117.29,
+        "tp": 4868.14,
+        "initial_sl": 3117.29,
+        "tp1_price": 4430.42,
+        "last_px": 3117.29,
+        "status": "\u274c STOP LOSS",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 95",
+        "curr_metric": "RS: 95",
+        "fx_entry": 157.692,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Consumer Cyclical",
+        "mcap": 512402063360,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 56.6
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-06",
+        "fx_exit": 157.6
+    },
+    {
+        "date": "2026-08-05",
+        "tk": "5208.T",
+        "px": 2760.0,
+        "sl": 2654.07,
+        "tp": null,
+        "initial_sl": 2654.07,
+        "tp1_price": 2971.86,
+        "last_px": 2654.07,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "RS: 90",
+        "fx_entry": 157.692,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Technology",
+        "mcap": 87512678400,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 58.9
+        },
+        "period": "FWD",
+        "days_held": 2,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-07",
+        "fx_exit": 158.409
+    },
+    {
+        "date": "2026-08-05",
+        "tk": "6278.T",
+        "px": 19100.0,
+        "sl": 16335.71,
+        "tp": 27392.86,
+        "initial_sl": 16335.71,
+        "tp1_price": 24628.58,
+        "last_px": 16335.71,
+        "status": "\u274c STOP LOSS",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 97",
+        "curr_metric": "RS: 96",
+        "fx_entry": 157.692,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Industrials",
+        "mcap": 329267216384,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 50.8
+        },
+        "period": "FWD",
+        "days_held": 2,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-07",
+        "fx_exit": 158.409
+    },
+    {
+        "date": "2026-08-05",
+        "tk": "6768.T",
+        "px": 869.0,
+        "sl": 774.57,
+        "tp": 1152.29,
+        "initial_sl": 774.57,
+        "tp1_price": 1057.86,
+        "last_px": 796.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 89",
+        "curr_metric": "RS: 82",
+        "fx_entry": 157.692,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Technology",
+        "mcap": 63343341568,
+        "feature_score": 1,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 44.4
+        },
+        "period": "FWD",
+        "days_held": 5,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-05",
+        "tk": "6941.T",
+        "px": 10260.0,
+        "sl": 9148.57,
+        "tp": 13594.29,
+        "initial_sl": 9148.57,
+        "tp1_price": 12482.86,
+        "last_px": 9148.57,
+        "status": "\u274c STOP LOSS",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 98",
+        "curr_metric": "RS: 98",
+        "fx_entry": 157.692,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Technology",
+        "mcap": 151346741248,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 58.6
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-06",
+        "fx_exit": 157.6
+    },
+    {
+        "date": "2026-08-05",
+        "tk": "7272.T",
+        "px": 1805.0,
+        "sl": 1690.79,
+        "tp": 2147.64,
+        "initial_sl": 1690.79,
+        "tp1_price": 2033.42,
+        "last_px": 1922.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 93",
+        "curr_metric": "RS: 95",
+        "fx_entry": 157.692,
+        "sources": [
+            "NK225",
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "Consumer Cyclical",
+        "mcap": 1865743335424,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 84.6
+        },
+        "period": "FWD",
+        "days_held": 5,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-06",
+        "tk": "4385.T",
+        "px": 4921.0,
+        "sl": 4552.57,
+        "tp": 6026.29,
+        "initial_sl": 4552.57,
+        "tp1_price": 5657.86,
+        "last_px": 4842.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 94",
+        "curr_metric": "RS: 94",
+        "fx_entry": 157.6,
+        "sources": [
+            "NK225",
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 59.4
+        },
+        "period": "FWD",
+        "days_held": 4,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-06",
+        "tk": "5480.T",
+        "px": 5690.0,
+        "sl": 5508.93,
+        "tp": null,
+        "initial_sl": 5508.93,
+        "tp1_price": 6052.14,
+        "last_px": 5508.93,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "RS: 71",
+        "fx_entry": 157.6,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Basic Materials",
+        "mcap": 76472713216,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 79.2
+        },
+        "period": "FWD",
+        "days_held": 4,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-10",
+        "fx_exit": 159.248
+    },
+    {
+        "date": "2026-08-06",
+        "tk": "6645.T",
+        "px": 6819.0,
+        "sl": 6347.57,
+        "tp": 8233.29,
+        "initial_sl": 6347.57,
+        "tp1_price": 7761.86,
+        "last_px": 6874.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 91",
+        "curr_metric": "RS: 92",
+        "fx_entry": 157.6,
+        "sources": [
+            "NK225",
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "Technology",
+        "mcap": 1351630454784,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 77.8
+        },
+        "period": "FWD",
+        "days_held": 4,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "AMN",
+        "px": 36.0,
+        "sl": 33.23,
+        "tp": null,
+        "initial_sl": 33.23,
+        "tp1_price": 41.54,
+        "last_px": 33.23,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Healthcare",
+        "mcap": 1419569408,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 58.5
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-07"
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "ETSY",
+        "px": 85.55,
+        "sl": 80.96,
+        "tp": null,
+        "initial_sl": 80.96,
+        "tp1_price": 94.73,
+        "last_px": 80.96,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83d\udca5 BB \u64e0\u58d3",
+        "entry_metric": "",
+        "curr_metric": "RS: 92",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Consumer Cyclical",
+        "mcap": 7379252224,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": true,
+            "ml_rsi": 52.8
+        },
+        "period": "FWD",
+        "days_held": 3,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-10"
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "2681.T",
+        "px": 2319.0,
+        "sl": 2177.0,
+        "tp": 2745.0,
+        "initial_sl": 2177.0,
+        "tp1_price": 2603.0,
+        "last_px": 2177.0,
+        "status": "\u274c STOP LOSS",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 84",
+        "curr_metric": "RS: 84",
+        "fx_entry": 158.409,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Consumer Cyclical",
+        "mcap": 91740684288,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 71.6
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-07",
+        "fx_exit": 158.409
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "4004.T",
+        "px": 16395.0,
+        "sl": 14436.43,
+        "tp": 22270.71,
+        "initial_sl": 14436.43,
+        "tp1_price": 20312.14,
+        "last_px": 16335.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 99",
+        "curr_metric": "RS: 99",
+        "fx_entry": 158.409,
+        "sources": [
+            "NK225",
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "Basic Materials",
+        "mcap": 2956365922304,
+        "feature_score": 1,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 61.2
+        },
+        "period": "FWD",
+        "days_held": 3,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "6875.T",
+        "px": 11100.0,
+        "sl": 10307.14,
+        "tp": 13478.57,
+        "initial_sl": 10307.14,
+        "tp1_price": 12685.72,
+        "last_px": 11360.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 92",
+        "curr_metric": "RS: 92",
+        "fx_entry": 158.409,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Technology",
+        "mcap": 159984500736,
+        "feature_score": 1,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 74.9
+        },
+        "period": "FWD",
+        "days_held": 3,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "7826.T",
+        "px": 7920.0,
+        "sl": 7122.86,
+        "tp": 10311.43,
+        "initial_sl": 7122.86,
+        "tp1_price": 9514.28,
+        "last_px": 8560.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 98",
+        "curr_metric": "RS: 99",
+        "fx_entry": 158.409,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Technology",
+        "mcap": 210570035200,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 64.8
+        },
+        "period": "FWD",
+        "days_held": 3,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "AMN",
+        "px": 36.0,
+        "sl": 33.23,
+        "tp": null,
+        "initial_sl": 33.23,
+        "tp1_price": 41.54,
+        "last_px": 33.23,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Healthcare",
+        "mcap": 1419569408,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 58.5
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-07"
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "2681.T",
+        "px": 2319.0,
+        "sl": 2177.0,
+        "tp": 2745.0,
+        "initial_sl": 2177.0,
+        "tp1_price": 2603.0,
+        "last_px": 2177.0,
+        "status": "\u274c STOP LOSS",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 84",
+        "curr_metric": "RS: 84",
+        "fx_entry": 158.409,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Consumer Cyclical",
+        "mcap": 91740684288,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 71.6
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-07",
+        "fx_exit": 158.409
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "AMN",
+        "px": 36.0,
+        "sl": 33.23,
+        "tp": null,
+        "initial_sl": 33.23,
+        "tp1_price": 41.54,
+        "last_px": 36.6,
+        "status": "OPEN",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "RS: 97",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Healthcare",
+        "mcap": 1419569408,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 58.5
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "2681.T",
+        "px": 2319.0,
+        "sl": 2177.0,
+        "tp": 2745.0,
+        "initial_sl": 2177.0,
+        "tp1_price": 2603.0,
+        "last_px": 2306.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 84",
+        "curr_metric": "RS: 83",
+        "fx_entry": 158.409,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Consumer Cyclical",
+        "mcap": 91740684288,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 71.6
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-10",
+        "tk": "SEZL",
+        "px": 118.0,
+        "sl": 101.27,
+        "tp": 168.2,
+        "initial_sl": 101.27,
+        "tp1_price": 151.46,
+        "last_px": 118.0,
+        "status": "OPEN",
+        "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
+        "entry_metric": "RSI: 25",
+        "curr_metric": "RSI: 25",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "Financial Services",
+        "mcap": 3967988480,
+        "feature_score": 0,
+        "features": {
+            "mss": false,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 25.6
+        },
+        "period": "FWD"
+    },
+    {
+        "date": "2026-08-10",
+        "tk": "2384.T",
+        "px": 4920.0,
+        "sl": 4680.54,
+        "tp": null,
+        "initial_sl": 4680.54,
+        "tp1_price": 5398.92,
+        "last_px": 4920.0,
+        "status": "OPEN",
+        "tag": "\ud83c\udfc6 VCP \u7a81\u7834",
+        "entry_metric": "",
+        "curr_metric": "",
+        "fx_entry": 159.248,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Industrials",
+        "mcap": 195409444864,
+        "feature_score": 3,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": true,
+            "ml_rsi": 57.9
+        },
+        "period": "FWD"
+    },
+    {
+        "date": "2026-08-10",
+        "tk": "6258.T",
+        "px": 3865.0,
+        "sl": 3583.14,
+        "tp": 4710.57,
+        "initial_sl": 3583.14,
+        "tp1_price": 4428.72,
+        "last_px": 3865.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 93",
+        "curr_metric": "RS: 93",
+        "fx_entry": 159.248,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Industrials",
+        "mcap": 118368223232,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 76.6
+        },
+        "period": "FWD"
+    },
+    {
+        "date": "2026-08-10",
+        "tk": "6869.T",
+        "px": 1980.0,
+        "sl": 1892.5,
+        "tp": 2242.5,
+        "initial_sl": 1892.5,
+        "tp1_price": 2155.0,
+        "last_px": 1980.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 80",
+        "curr_metric": "RS: 80",
+        "fx_entry": 159.248,
+        "sources": [
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "Healthcare",
+        "mcap": 1192042692608,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 76.5
+        },
+        "period": "FWD"
+    },
+    {
+        "date": "2026-08-10",
+        "tk": "7456.T",
+        "px": 6850.0,
+        "sl": 6420.0,
+        "tp": 8140.0,
+        "initial_sl": 6420.0,
+        "tp1_price": 7710.0,
+        "last_px": 6850.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 76",
+        "curr_metric": "RS: 76",
+        "fx_entry": 159.248,
+        "sources": [
+            "TOPIX_Small500_\u5c0f\u578b"
+        ],
+        "sector": "Basic Materials",
+        "mcap": 177017061376,
+        "feature_score": 1,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": false,
+            "ml_rsi": 76.9
+        },
+        "period": "FWD"
+    }
+]
