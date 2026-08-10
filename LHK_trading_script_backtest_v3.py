@@ -1221,12 +1221,17 @@ import csv
 CSV_EXPORT_FILE = os.path.join(OUTPUT_DIR, "uat_trade_history.csv")
 
 if trade_history:
-    # 提取所有出現過嘅欄位 Key 作為 CSV Header
-    keys = trade_history[0].keys()
+    # 💡 修復：動態收集所有出現過嘅 Keys，防止因欄位缺失而報錯
+    all_keys = set()
+    for t in trade_history:
+        all_keys.update(t.keys())
+    
+    # 將 keys 轉為 list，並可以排個序令佢整齊啲
+    keys = list(all_keys)
     
     try:
         with open(CSV_EXPORT_FILE, 'w', newline='', encoding='utf-8-sig') as output_file:
-            dict_writer = csv.DictWriter(output_file, fieldnames=keys)
+            dict_writer = csv.DictWriter(output_file, fieldnames=keys, extrasaction='ignore')
             dict_writer.writeheader()
             dict_writer.writerows(trade_history)
         print(f"📁 [UAT 覆盤] 成功匯出交易紀錄至 CSV 檔案：{CSV_EXPORT_FILE}")
