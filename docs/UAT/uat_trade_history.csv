@@ -1,0 +1,4 @@
+﻿date,tk,px,sl,tp,initial_sl,tp1_price,last_px,status,tag,entry_metric,curr_metric,sources,sector,mcap,feature_score,features,days_held,partial_tp_hit,close_date
+2024-05-08,TRIP,18.16,16.74,22.43,16.74,19.58,18.64,❌ 觸發 3 日時間止損,📉 極度超賣,RSI: 21,RSI: 19,['S&P600_小型'],N/A,0,2,"{'mss': False, 'smc': True, 'amd': True, 'ml_rsi': 21.3}",3,False,2024-05-13
+2024-09-11,ALLY,30.9,29.03,36.52,29.03,32.77,31.05,❌ 觸發 3 日時間止損,📉 極度超賣,RSI: 19,RSI: 9,['S&P400_中型'],Financial Services,13299610624,1,"{'mss': False, 'smc': False, 'amd': True, 'ml_rsi': 19.0}",3,False,2024-09-16
+2026-03-09,AEO,18.21,16.52,23.28,16.52,19.9,17.31,❌ 觸發 3 日時間止損,📉 極度超賣,RSI: 18,RSI: 19,['S&P600_小型'],Consumer Cyclical,0,1,"{'mss': False, 'smc': False, 'amd': True, 'ml_rsi': 18.7}",3,False,2026-03-12
