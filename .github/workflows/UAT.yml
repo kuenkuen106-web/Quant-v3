@@ -1,5 +1,8 @@
 name: UAT 回測 (逐日時光機)
 
+permissions:
+  contents: write
+
 on:
   workflow_dispatch:
     inputs:
