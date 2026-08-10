@@ -2928,7 +2928,7 @@ function renderThemesTab() {{
                     <td class="p-2 text-[10px] text-slate-400 font-mono text-right">${{formatMcap(t.mcap)}}</td>
                     <td class="p-2 text-center">
                         ${{t.partial_tp_hit 
-                            ? '<span class="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 text-[10px] font-black">🎯 ${{Math.round(PARTIAL_PCT*100)}}% 已止盈 (${{Math.round((1-PARTIAL_PCT)*100)}}% 放飛)</span>` 
+                            ? '<span class="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 text-[10px] font-black">🎯 ' + Math.round(PARTIAL_PCT*100) + '% 已止盈 (' + Math.round((1-PARTIAL_PCT)*100) + '% 放飛)</span>'
                             : '<span class="text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[10px] font-black">⏳ 100% 正常持倉中</span>'
                         }}
                     </td>
