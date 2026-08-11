@@ -27,7 +27,8 @@ os.makedirs(CHARTS_DIR, exist_ok=True)
 # 讀取 GitHub Secrets (UAT 專用的 Webhook)
 DISCORD_WEBHOOK_URL = os.environ.get("DISCORD_BACKTEST_WEBHOOK_URL", "")
 DISCORD_SUMMARY_WEBHOOK = os.environ.get("DISCORD_BACKTEST_SUMMARY_WEBHOOK", "")
-HISTORY_FILE = os.path.join(OUTPUT_DIR, "uat_trade_history.json")
+_hs = os.environ.get("HISTORY_SUFFIX", "")
+HISTORY_FILE = os.path.join(OUTPUT_DIR, f"uat_trade_history{_hs}.json")
 
 # =============================================================================
 # 核心策略與時光機參數 
@@ -54,6 +55,21 @@ SWING_TIME_STOP_DAYS = 15
 SWING_TIME_STOP_MIN_R = 1.0
 
 BENCH = ['SPY', '^VIX', '^N225', 'JPY=X']
+
+# =========================================================================
+# 📊 百分位門檻（取代絕對數值，令策略自動適應市況變化）
+# =========================================================================
+USE_PCT_MODE = os.environ.get("PCT_MODE", "1") == "1"
+
+PCT_LOOKBACK   = 252    # 自我參照窗口（約一年交易日）
+PCT_LIQUIDITY  = 0.60   # 流動性：只取當日成交額最高嘅 40%
+PCT_ELITE_LIQ  = 0.85   # 缺口策略專用：最高嘅 15%
+PCT_REC_VOLAT  = 0.30   # 近期波幅：處於自己過去一年最靜嘅 30%
+PCT_BASE_DD    = 0.50   # 底部深度：淺過自己過去一年中位數
+PCT_GAP_ATR    = 0.8    # 缺口：至少 0.8 倍 ATR（取代固定 3%）
+PCT_DMA50_OS   = 0.10   # 超賣：偏離度處於過去一年最極端 10%
+
+print(f"📊 門檻模式：{'百分位 (自適應)' if USE_PCT_MODE else '絕對值 (舊版)'}")
 
 IS_END  = '2022-12-31'    # 2019-01 → 2022-12（4 年，含 2020 崩盤 + 2022 熊市）
 OOS_END = '2025-03-31'    # 2023-01 → 2025-03（2.25 年）
@@ -833,12 +849,14 @@ rsi_std_14 = rsi_all.rolling(14).std().iloc[-1]
 # VCP 形態參數 (Base Drawdown & Recent Volatility)
 max60 = closes.rolling(60).max()
 min60 = closes.rolling(60).min()
-base_dd = ((max60 - min60) / max60).iloc[-1]
+_base_dd_hist = (max60 - min60) / max60          # 👈 保留完整序列
+base_dd = _base_dd_hist.iloc[-1]
 
 _c_prev = closes.shift(1)
 max10 = _c_prev.rolling(10).max()
 min10 = _c_prev.rolling(10).min()
-rec_volat = ((max10 - min10) / max10).iloc[-1] 
+_rec_volat_hist = (max10 - min10) / max10        # 👈 保留完整序列
+rec_volat = _rec_volat_hist.iloc[-1] 
 
 sma50_all = closes.rolling(50).mean()
 sma200_all = closes.rolling(200).mean()
@@ -896,12 +914,37 @@ dict_max10_prev = max10_prev_all.iloc[-1].to_dict()
 dict_vwap20 = vwap_20_all.iloc[-1].to_dict()
 dict_vavs = vavs_all.iloc[-1].to_dict()
 dict_vavs_ma = vavs_ma20_all.iloc[-1].to_dict()
-# =========================================================================
 
-# 找出美股成交額 > 500萬 USD 的股票
-us_mask = (~dollar_vol_20.index.str.endswith('.T')) & (dollar_vol_20 >= 20_000_000)
-# 找出日股成交額 > 3億 JPY 的股票
-jp_mask = (dollar_vol_20.index.str.endswith('.T')) & (dollar_vol_20 >= 300_000_000)
+# =========================================================================
+# 📊 自我參照百分位：只對最後一行做 rank，避免 rolling.rank 拖死回測
+#    數值意義：0.0 = 過去一年最低，1.0 = 過去一年最高
+# =========================================================================
+_win = min(PCT_LOOKBACK, len(closes))
+dict_rec_volat_pct = _rec_volat_hist.iloc[-_win:].rank(pct=True).iloc[-1].to_dict()
+dict_base_dd_pct   = _base_dd_hist.iloc[-_win:].rank(pct=True).iloc[-1].to_dict()
+dict_dma50_pct     = dma50_all.iloc[-_win:].rank(pct=True).iloc[-1].to_dict()
+
+def pct_of(d, tk, default=1.0):
+    """安全讀取百分位，NaN 或者搵唔到就返回 default（=最寬鬆，唔會誤觸發）"""
+    v = d.get(tk)
+    return default if v is None or pd.isna(v) else float(v)
+
+# =========================================================================
+_is_jp_idx = dollar_vol_20.index.str.endswith('.T')
+_dv_us = dollar_vol_20[~_is_jp_idx].dropna()
+_dv_jp = dollar_vol_20[_is_jp_idx].dropna()
+
+if USE_PCT_MODE and len(_dv_us) > 50 and len(_dv_jp) > 50:
+    us_thresh   = _dv_us.quantile(PCT_LIQUIDITY)
+    jp_thresh   = _dv_jp.quantile(PCT_LIQUIDITY)
+    elite_liq   = _dv_us.quantile(PCT_ELITE_LIQ)      # 缺口策略專用
+else:
+    us_thresh, jp_thresh, elite_liq = 20_000_000, 300_000_000, 50_000_000
+
+print(f"💧 流動性門檻 | 美股 ${us_thresh/1e6:.1f}M | 日股 ¥{jp_thresh/1e6:.0f}M | 精英 ${elite_liq/1e6:.0f}M")
+
+us_mask = (~_is_jp_idx) & (dollar_vol_20 >= us_thresh)
+jp_mask = (_is_jp_idx)  & (dollar_vol_20 >= jp_thresh)
 
 # 合併符合資格的名單
 valid_tickers = dollar_vol_20[us_mask | jp_mask].index.tolist()
@@ -996,7 +1039,12 @@ for ticker in valid_tickers:
         # =================================================================
         is_uptrend = (cp > sma50) and (sma50 > sma200)
         is_near_high = ((high120 - cp) / high120) <= 0.15
-        is_tight = (v_base_dd <= 0.35) and (v_rec_vol <= 0.12)
+        if USE_PCT_MODE:
+            _rv_p = pct_of(dict_rec_volat_pct, ticker)
+            _bd_p = pct_of(dict_base_dd_pct, ticker)
+            is_tight = (_rv_p <= PCT_REC_VOLAT) and (_bd_p <= PCT_BASE_DD)
+        else:
+            is_tight = (v_base_dd <= 0.35) and (v_rec_vol <= 0.12)
         
         # 💡 升級：VCP 突破必須綁定「雙重共振」
         is_breaking_out = (cp > resist_10d) and quality_filter_passed
@@ -1026,7 +1074,14 @@ for ticker in valid_tickers:
         # 結合 ML-RSI, MSS 結構轉變, 恐慌極值, 巨鯨吸收率
         # =================================================================
         gap_magnitude = (c_op - p_px) / p_px if p_px > 0 else 0
-        is_gap_up = (gap_magnitude >= 0.03) and (c_vol > v_ma20 * 2) and (cp > c_op) and (closing_strength >= 0.6)
+
+        if USE_PCT_MODE:
+            _atr_pct = (catr / cp) if cp > 0 else 0.03
+            _gap_min = max(0.02, PCT_GAP_ATR * _atr_pct)     # 至少 2%，防止低波股濫發訊號
+        else:
+            _gap_min = 0.03
+
+        is_gap_up = (gap_magnitude >= _gap_min) and (c_vol > v_ma20 * 2) and (cp > c_op) and (closing_strength >= 0.6)
         
         dynamic_oversold_threshold = max(18, 30 - (rsi_std * 0.5)) 
         is_ml_oversold = (rsi_val < dynamic_oversold_threshold)
@@ -1034,8 +1089,13 @@ for ticker in valid_tickers:
         is_volumetric_extreme = c_vol > (v_ma50 * 1.5)
         is_whale_absorption = curr_vavs > (vavs_ma * 2.0)
 
-        is_oversold = is_ml_oversold and (cp < b_lower) and (dma50 < -0.15) and is_volumetric_extreme and (is_mss or is_whale_absorption)
+        if USE_PCT_MODE:
+            _dma_p = pct_of(dict_dma50_pct, ticker)          # 低百分位 = 特別偏離
+            is_deep_below = (_dma_p <= PCT_DMA50_OS) and (dma50 < -0.05)   # 加絕對下限防呆
+        else:
+            is_deep_below = (dma50 < -0.15)
 
+        is_oversold = is_ml_oversold and (cp < b_lower) and is_deep_below and is_volumetric_extreme and (is_mss or is_whale_absorption)
         # =================================================================
         # ⚖️ 大市四象限過濾與動態止損 (Seasonal & Regime Control)
         # =================================================================
@@ -1106,7 +1166,7 @@ for ticker in valid_tickers:
                 if rs < 90: continue 
                 
                 # 條件 C：極高流動性防護 (每日平均成交額 > 5000萬美金，過濾容易被操控的中小企)
-                if dict_dollar_vol.get(ticker, 0) < 50_000_000: continue
+                if dict_dollar_vol.get(ticker, 0) < elite_liq: continue
                 
                 # 條件 D：爆發力必須異常強大 (當日成交量大於 20日平均的 3倍！)
                 if c_vol < v_ma20 * 3: continue
@@ -1189,7 +1249,9 @@ for ticker in valid_tickers:
             trade_info['feature_score'] = feature_score
             trade_info['features'] = {
                 'mss': is_mss, 'smc': is_institutional_ob,
-                'amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1)
+                'amd': is_amd_manipulation, 'ml_rsi': round(rsi_val, 1),
+                'rv_pct': round(pct_of(dict_rec_volat_pct, ticker), 3),
+                'bd_pct': round(pct_of(dict_base_dd_pct, ticker), 3),
             }
             trade_info['period'] = ('IS' if today_str <= IS_END
                 else 'OOS' if today_str <= OOS_END
@@ -1572,6 +1634,121 @@ themes_data = {
     "stocks": stealth_hot_stocks[:20]
 }
 themes_data_str = json.dumps(themes_data)
+
+# =============================================================================
+# 📊 MODULE 6.5 — Benchmark 對照組（A: Buy&Hold SPY / B: 每月 RS Top20）
+# =============================================================================
+BENCH_TOP_N   = 20
+BENCH_MARKETS = os.environ.get("BENCH_MARKETS", "US+JP")   # "US" 或 "US+JP"
+
+print("⏳ 正在計算 Benchmark 對照組...")
+
+_bt_dates   = [t['date'] for t in trade_history if t.get('date')]
+bench_start = min(_bt_dates) if _bt_dates else closes.index[0].strftime('%Y-%m-%d')
+
+def _perf(eq):
+    if len(eq) < 2: return {'total': 0.0, 'cagr': 0.0, 'mdd': 0.0}
+    total = float(eq.iloc[-1] / eq.iloc[0] - 1)
+    mdd   = float((eq / eq.cummax() - 1).min())
+    return {'total': round(total*100, 1), 'cagr': 0.0, 'mdd': round(mdd*100, 1), '_raw': total}
+
+bench_result = {}
+
+# --- A. Buy & Hold SPY ---
+try:
+    _spy = closes['SPY'].loc[bench_start:].dropna()
+    _a = _perf(_spy)
+    _yrs_a = max(len(_spy) / 252, 0.1)
+    _a['cagr'] = round(((1 + _a['_raw']) ** (1/_yrs_a) - 1) * 100, 1)
+    _a.pop('_raw', None)
+    bench_result['A_SPY'] = _a
+except Exception as e:
+    bench_result['A_SPY'] = {'total': 0, 'cagr': 0, 'mdd': 0}
+    print(f"⚠️ Benchmark A 失敗: {e}")
+
+# --- B. 每月頭買入 RS Top N，等權，持有一個月 ---
+try:
+    _dv_full = (closes * vols).rolling(20).mean()
+    _c  = closes.loc[bench_start:]
+    _ix = _c.index.to_series()
+    rebal_dates = _ix.groupby([_ix.dt.year, _ix.dt.month]).first().tolist()
+
+    _pool = us_tickers + (jp_tickers if BENCH_MARKETS == "US+JP" else [])
+    _pool = [t for t in _pool if t in closes.columns]
+    _jp_flag = pd.Series([t.endswith('.T') for t in _pool], index=_pool)
+
+    eq, dates_b, picks_log, m_rets = [1.0], [rebal_dates[0]], [], []
+
+    for i in range(len(rebal_dates) - 1):
+        d0, d1 = rebal_dates[i], rebal_dates[i+1]
+        rs_row = rs_rank.loc[d0, _pool]
+        dv_row = _dv_full.loc[d0, _pool]
+        px0, px1 = closes.loc[d0, _pool], closes.loc[d1, _pool]
+
+        # 用同策略一致嘅流動性同仙股過濾
+        liq_ok = ((~_jp_flag) & (dv_row >= us_thresh)) | (_jp_flag & (dv_row >= jp_thresh))
+        px_ok  = ((~_jp_flag) & (px0 >= 1))           | (_jp_flag & (px0 >= 100))
+        ok = liq_ok & px_ok & rs_row.notna() & px0.notna() & px1.notna() & (px0 > 0)
+
+        cand = rs_row[ok].nlargest(BENCH_TOP_N)
+        if len(cand) == 0:
+            eq.append(eq[-1]); dates_b.append(d1); continue
+
+        rets = (px1[cand.index] / px0[cand.index] - 1)
+
+        # 日股同樣做匯率換算
+        if 'JPY=X' in closes.columns:
+            fx0, fx1 = closes['JPY=X'].loc[d0], closes['JPY=X'].loc[d1]
+            if pd.notna(fx0) and pd.notna(fx1) and fx1 > 0:
+                for tk in cand.index:
+                    if tk.endswith('.T'):
+                        rets[tk] = (1 + rets[tk]) * (fx0 / fx1) - 1
+
+        m_ret = float(rets.mean()) - ROUND_TRIP_COST   # 每月換倉都要交易成本
+        m_rets.append(m_ret)
+        eq.append(eq[-1] * (1 + m_ret)); dates_b.append(d1)
+        picks_log.append({'date': d0.strftime('%Y-%m-%d'),
+                          'ret': round(m_ret*100, 2), 'top': list(cand.index[:5])})
+
+    _eq_s = pd.Series(eq, index=pd.DatetimeIndex(dates_b))
+    _b = _perf(_eq_s)
+    _yrs_b = max(len(m_rets) / 12, 0.1)
+    _b['cagr']    = round(((1 + _b['_raw']) ** (1/_yrs_b) - 1) * 100, 1)
+    _b['months']  = len(m_rets)
+    _b['win_mth'] = round(sum(1 for r in m_rets if r > 0) / max(len(m_rets),1) * 100, 1)
+    _b['bp_day']  = round((sum(m_rets)/max(len(m_rets),1)) / 21 * 10000, 2)  # 每日每倉位 bp
+    _b.pop('_raw', None)
+    bench_result['B_RS20'] = _b
+    bench_result['B_picks'] = picks_log[-12:]
+except Exception as e:
+    bench_result['B_RS20'] = {'total': 0, 'cagr': 0, 'mdd': 0, 'months': 0, 'bp_day': 0}
+    print(f"⚠️ Benchmark B 失敗: {e}")
+
+# --- 你的策略（每倉位口徑，方便同 B 直接比）---
+_cl = [t for t in trade_history if t.get('status') != 'OPEN']
+if _cl:
+    _exp_pct  = sum(calc_true_pnl(t) for t in _cl) / len(_cl) / TICKETSIZE
+    _avg_days = max(sum(t.get('days_held', 1) for t in _cl) / len(_cl), 1)
+    bench_result['strategy'] = {
+        'trades': len(_cl),
+        'exp_pct': round(_exp_pct * 100, 2),
+        'avg_days': round(_avg_days, 1),
+        'bp_day': round(_exp_pct / _avg_days * 10000, 2),   # 👈 同 B 同一把尺
+    }
+
+print("\n" + "="*68)
+print(f"📊 BENCHMARK 對照（由 {bench_start} 起）")
+_a, _b2 = bench_result['A_SPY'], bench_result['B_RS20']
+print(f"   A. Buy&Hold SPY   : 總回報 {_a['total']:>7}% | CAGR {_a['cagr']:>6}% | MaxDD {_a['mdd']:>6}%")
+print(f"   B. 每月 RS Top{BENCH_TOP_N}   : 總回報 {_b2['total']:>7}% | CAGR {_b2['cagr']:>6}% | MaxDD {_b2['mdd']:>6}%"
+      f" | {_b2.get('months',0)} 個月 | {_b2.get('bp_day',0)} bp/日/倉")
+if 'strategy' in bench_result:
+    _s = bench_result['strategy']
+    print(f"   C. 你的策略        : 每單 {_s['exp_pct']:>6}% | {_s['trades']} 單 "
+          f"| 平均持倉 {_s['avg_days']} 日 | {_s['bp_day']} bp/日/倉")
+print("="*68 + "\n")
+
+bench_data_str = json.dumps(bench_result)
 
 print("⏳ [8/8] 正在生成雙分頁量化儀表板...")
 
@@ -1992,6 +2169,29 @@ html = f"""<!DOCTYPE html>
         <div class="grid grid-cols-4 gap-4" id="journal-stats"></div>
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2" id="kpi-scorecard"></div>
 
+        <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-4">
+            <div class="flex justify-between items-center mb-3">
+                <h3 class="font-black text-lime-400 flex items-center gap-2">🏁 Benchmark 對照 (Reality Check)</h3>
+                <div class="text-[10px] text-slate-500">打唔贏笨方法 = 你嗰堆條件冇貢獻</div>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-xs text-left whitespace-nowrap">
+                    <thead class="text-slate-500 uppercase border-b border-slate-700 bg-slate-800/50">
+                        <tr>
+                            <th class="p-2">對照組</th><th class="p-2 text-right">總回報</th>
+                            <th class="p-2 text-right">CAGR</th><th class="p-2 text-right">MaxDD</th>
+                            <th class="p-2 text-right text-amber-300">bp/日/倉位</th>
+                        </tr>
+                    </thead>
+                    <tbody id="bench-tbody"></tbody>
+                </table>
+            </div>
+            <div class="text-[10px] text-slate-500 mt-3 leading-relaxed">
+                ⚠️ A/B 係複利 equity 曲線；你嘅策略係固定 $10,000 每單，冇複利，所以 <b>總回報同 CAGR 唔可以直接比</b>。
+                真正可比嘅係最右邊嘅 <b>bp/日/倉位</b>（每個倉位每日賺幾多基點）。
+            </div>
+        </div>
+
         <div class="bg-slate-800/30 rounded-xl border border-slate-700 p-3 flex gap-4 items-end shadow-lg">
             <div>
                 <label class="text-[10px] text-slate-400 font-bold uppercase mb-1 block">🔍 策略篩選</label>
@@ -2139,6 +2339,7 @@ html = f"""<!DOCTYPE html>
         const chartData = {chart_data_str}; // 👈 加入呢行
         const tickerMap = {ticker_map_str}; // 接收 Python 傳入的完整觀察清單
         const themesData = {themes_data_str};
+        const benchData = {bench_data_str};
         const TICKETSIZE      = {TICKETSIZE};
         const PARTIAL_TP_PCT  = {PARTIAL_TP_PCT};
         const PARTIAL_PCT     = {PARTIAL_TP_PCT};
@@ -3003,6 +3204,33 @@ function renderThemesTab() {{
                     <td class="p-2 text-right font-black font-mono ${{pColor}}">${{pnl >= 0 ? '+' : ''}}${{pnlPct}}%</td>
                 </tr>`;
             }}).join('');
+
+            const benchTbody = document.getElementById('bench-tbody');
+            if (benchTbody && typeof benchData !== 'undefined') {{
+                const _row = (name, d, hi) => {{
+                    if (!d) return '';
+                    const c = (d.total >= 0) ? 'text-emerald-400' : 'text-red-400';
+                    return `<tr class="border-b border-slate-700/50 ${{hi ? 'bg-lime-500/5' : ''}}">
+                        <td class="p-2 font-bold text-white">${{name}}</td>
+                        <td class="p-2 text-right font-mono ${{c}}">${{d.total != null ? d.total + '%' : '-'}}</td>
+                        <td class="p-2 text-right font-mono ${{c}}">${{d.cagr != null ? d.cagr + '%' : '-'}}</td>
+                        <td class="p-2 text-right font-mono text-red-400">${{d.mdd != null ? d.mdd + '%' : '-'}}</td>
+                        <td class="p-2 text-right font-black font-mono text-amber-300">${{d.bp_day != null ? d.bp_day : '-'}}</td>
+                    </tr>`;
+                }};
+                let h = _row('A · Buy &amp; Hold SPY', benchData.A_SPY, false)
+                      + _row('B · 每月 RS Top20', benchData.B_RS20, false);
+                if (benchData.strategy) {{
+                    const s = benchData.strategy;
+                    h += `<tr class="border-b border-slate-700/50 bg-lime-500/10">
+                        <td class="p-2 font-black text-lime-300">C · 你的策略</td>
+                        <td class="p-2 text-right font-mono text-slate-400" colspan="3">
+                            每單 ${{s.exp_pct}}% · ${{s.trades}} 單 · 平均持倉 ${{s.avg_days}} 日</td>
+                        <td class="p-2 text-right font-black font-mono text-amber-300">${{s.bp_day}}</td>
+                    </tr>`;
+                }}
+                benchTbody.innerHTML = h;
+            }}
         }}
     </script>
 </body>
