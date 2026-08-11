@@ -1,8 +1,5 @@
 name: UAT 回測 (逐日時光機)
 
-permissions:
-  contents: write
-
 on:
   workflow_dispatch:
     inputs:
@@ -15,11 +12,18 @@ on:
         required: true
         default: 'B_runner'
 
+permissions:
+  contents: write
+
+concurrency:
+  group: uat-backtest
+  cancel-in-progress: false
+
 jobs:
   backtest:
     runs-on: ubuntu-latest
-    timeout-minutes: 350        # GitHub 上限 6 小時
-    
+    timeout-minutes: 350
+
     steps:
       - uses: actions/checkout@v4
         with:
@@ -28,37 +32,64 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'
 
       - name: 安裝套件
         run: |
           python -m pip install --upgrade pip
           pip install pandas numpy yfinance matplotlib requests lxml html5lib fake-useragent
 
-      - name: 清空舊回測紀錄（重要！唔清會撈亂新舊策略嘅單）
+      - name: 清空舊回測紀錄與 cache
         run: |
           mkdir -p docs/UAT/charts
           rm -f docs/UAT/uat_trade_history.json
           rm -f docs/UAT/uat_trade_history.csv
+          rm -f docs/UAT/watchlist_cache_*.json
+          rm -f docs/UAT/market_data_cache.pkl
 
       - name: 逐日跑回測
         env:
           DISCORD_BACKTEST_WEBHOOK_URL: ${{ secrets.DISCORD_BACKTEST_WEBHOOK_URL }}
           DISCORD_BACKTEST_SUMMARY_WEBHOOK: ${{ secrets.DISCORD_BACKTEST_SUMMARY_WEBHOOK }}
-          EXIT_MODE: ${{ github.event.inputs.exit_mode }}
+          EXIT_MODE: ${{ inputs.exit_mode }}
         run: |
-          START=${{ github.event.inputs.start_days }}
+          START=${{ inputs.start_days }}
           for d in $(seq $START -1 0); do
             if [ $((d % 50)) -eq 0 ]; then echo "===== 進度：剩餘 $d 日 ====="; fi
-            UAT_DAYS_AGO=$d python LHK_trading_script_backtest_v3.py
-            if [ $? -ne 0 ]; then echo "❌ 第 $d 日失敗，中止"; exit 1; fi
+            UAT_DAYS_AGO=$d python LHK_trading_script_backtest_v3.py \
+              || { echo "❌ 第 $d 日失敗，中止"; exit 1; }
           done
 
-      - name: 發佈到 uat-results 分支
+      - name: 上載 artifact（就算 push 失敗都保得住）
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: uat-backtest-${{ inputs.exit_mode }}
+          path: |
+            docs/UAT/index.html
+            docs/UAT/uat_trade_history.json
+            docs/UAT/uat_trade_history.csv
+            docs/UAT/charts/
+          retention-days: 14
+          if-no-files-found: warn
+
+      - name: 提交到 main（含 rebase 重試）
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
-          git checkout --orphan uat-results-tmp
-          git rm -rf --cached . > /dev/null
           git add docs/UAT
-          git commit -m "UAT 回測 $(date +%F)"
-          git push -f origin uat-results-tmp:uat-results
+          git commit -m "UAT 回測 ${{ inputs.exit_mode }} $(date +%F)" || { echo "無變更"; exit 0; }
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main && git push origin main; then
+              echo "✅ 第 $i 次 push 成功"; exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            echo "⚠️ 第 $i 次失敗，10 秒後重試..."; sleep 10
+          done
+          echo "❌ 連續 5 次 push 失敗，請去 Artifacts 下載結果"; exit 1
+
+      - name: 顯示 Dashboard 連結
+        if: success()
+        run: |
+          echo "### 🕰️ UAT Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "https://kuenkuen106-web.github.io/Quant-v3/UAT/" >> $GITHUB_STEP_SUMMARY
