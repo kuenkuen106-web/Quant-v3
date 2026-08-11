@@ -773,9 +773,11 @@ for trade in trade_history:
             tp1_price = trade.get('tp1_price', round(buy_px + (initial_risk * PARTIAL_TP_R), 2))
             
             # --- 分注平倉 ---
+            _tp1_today = False 
             if not trade['partial_tp_hit'] and today_high >= tp1_price and initial_risk > 0:
                 trade['partial_tp_hit'] = True
                 trade['sl'] = buy_px
+                _tp1_today = True  
                 print(f"🎯 [分注系統] {tk} 觸發 TP1 ({tp1_price})，鎖定 {int(PARTIAL_TP_PCT*100)}% 利潤並保本。")
 
             # --- 最終結案判定 (3-Way Classification) ---
@@ -790,11 +792,11 @@ for trade in trade_history:
 
                 # 👇 保本優先：實際 stop = chandelier 同 買入價 之中較高者
                 if trail_stop and not pd.isna(trail_stop):
-                    eff_stop = max(float(trail_stop), buy_px)
+                    eff_stop = float(trail_stop) if (trail_stop and not pd.isna(trail_stop)) else buy_px
                 else:
                     eff_stop = buy_px
 
-                if today_low <= eff_stop:
+                if not _tp1_today and today_low <= eff_stop:
                     today_open = float(current_opens.get(tk, eff_stop))
                     trade['last_px'] = round(min(eff_stop, today_open), 2)
                     trade['status'], trade['close_date'] = '✅ TRAIL EXIT', today_str
@@ -938,10 +940,11 @@ if USE_PCT_MODE and len(_dv_us) > 50 and len(_dv_jp) > 50:
     us_thresh   = _dv_us.quantile(PCT_LIQUIDITY)
     jp_thresh   = _dv_jp.quantile(PCT_LIQUIDITY)
     elite_liq   = _dv_us.quantile(PCT_ELITE_LIQ)      # 缺口策略專用
+    elite_liq_jp = _dv_jp.quantile(PCT_ELITE_LIQ) 
 else:
     us_thresh, jp_thresh, elite_liq = 20_000_000, 300_000_000, 50_000_000
 
-print(f"💧 流動性門檻 | 美股 ${us_thresh/1e6:.1f}M | 日股 ¥{jp_thresh/1e6:.0f}M | 精英 ${elite_liq/1e6:.0f}M")
+print(f"💧 流動性門檻 | 美股 ${us_thresh/1e6:.1f}M | 日股 ¥{jp_thresh/1e6:.0f}M | 精英 ${elite_liq/1e6:.0f}M / ¥{elite_liq_jp/1e6:.0f}M")
 
 us_mask = (~_is_jp_idx) & (dollar_vol_20 >= us_thresh)
 jp_mask = (_is_jp_idx)  & (dollar_vol_20 >= jp_thresh)
@@ -1064,7 +1067,7 @@ for ticker in valid_tickers:
         for k, v in _conds.items():
             if not v: reject[k] += 1
 
-        is_vcp = is_uptrend and is_near_high and is_tight and is_breaking_out and is_solid_candle and is_alpha_trend and is_institutional_ob and is_amd_manipulation and (not is_cpi_eve) and is_above_vwap
+        is_vcp = is_uptrend and is_near_high and is_tight and is_breaking_out and is_solid_candle and is_alpha_trend and is_institutional_ob and (not is_cpi_eve) and is_above_vwap
         
         # 💡 升級：BB 擠壓強制綁定「雙重共振」，過濾平庸的波動
         is_bb_sqz = (dict_bb_width.get(ticker) <= dict_bb_width_min120.get(ticker) * 1.1) and is_uptrend and is_alpha_trend and (not is_cpi_eve) and is_above_vwap and quality_filter_passed
@@ -1157,19 +1160,15 @@ for ticker in valid_tickers:
         elif is_gap_up:
             if is_red_light: continue # 熊市嚴禁做「缺口高開」接火棒
             
-            # 👇 Manager 特批：美股「精英制」缺口放行條件
-            if not is_jp:
-                # 條件 A：大市必須係「🟢 全面牛市」(黃燈/紅燈一律禁賽)
-                if is_mild_bull: continue 
-                
-                # 條件 B：只做真正的市場領頭羊 (RS 必須 > 90)
-                if rs < 90: continue 
-                
-                # 條件 C：極高流動性防護 (每日平均成交額 > 5000萬美金，過濾容易被操控的中小企)
-                if dict_dollar_vol.get(ticker, 0) < elite_liq: continue
-                
-                # 條件 D：爆發力必須異常強大 (當日成交量大於 20日平均的 3倍！)
-                if c_vol < v_ma20 * 3: continue
+            # 🌏 精英化過濾器（美股必用；日股由 GAP_JP_STRICT 控制）
+            #if (not is_jp) or GAP_JP_STRICT:
+            # 條件 A：市場最強悍嘅 10%
+            if rs < 90: continue
+            # 條件 C：極高流動性
+            _liq_min = elite_liq if not is_jp else elite_liq_jp
+            if dict_dollar_vol.get(ticker, 0) < _liq_min: continue
+            # 條件 D：井噴級爆量
+            if c_vol < v_ma20 * 3.0: continue
             
             # 如果過到上面嘅地獄測試 (或者本身係日股)，就可以正常建倉！
             tag_name = "⚡ 缺口動能"
