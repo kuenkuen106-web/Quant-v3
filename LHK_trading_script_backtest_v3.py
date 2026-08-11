@@ -66,7 +66,7 @@ END_DAYS = 0
 raw_days = os.environ.get("UAT_DAYS_AGO", "10")
 SIMULATE_DAYS_AGO = int(raw_days)
 
-IS_BACKTEST = SIMULATE_DAYS_AGO > 0
+IS_BACKTEST  = True                              # 👈 寫死
 IS_FINAL_RUN = (SIMULATE_DAYS_AGO <= END_DAYS)
 
 # =========================================================================
@@ -120,7 +120,7 @@ def get_stock_info(tk):
     return data
 
 def send_discord_alert(ticker, strategy_name, price, sl, tp, embed_color, sources, tp1_price=None, features=None):
-    if IS_BACKTEST and SIMULATE_DAYS_AGO > 1: return
+    if IS_BACKTEST and not IS_FINAL_RUN: return
     if not DISCORD_WEBHOOK_URL: return
     unit = "¥" if ticker.endswith(".T") else "$"
     
@@ -706,7 +706,10 @@ for trade in trade_history:
             days_held = trade.get('days_held', 0) + 1
             trade['days_held'] = days_held
             
-            if now_px > buy_px * 10 or now_px < buy_px * 0.1: continue
+            if now_px > buy_px * 10 or now_px < buy_px * 0.1: 
+                trade['status'], trade['close_date'] = '⚠️ 價格異常 (疑似拆股)', today_str
+                closed_this_run.append(trade)
+                continue
             if 'partial_tp_hit' not in trade: trade['partial_tp_hit'] = False
             if 'initial_sl' not in trade: trade['initial_sl'] = trade['sl']
             
@@ -911,7 +914,14 @@ print(f"🧹 過濾成交量低迷股票後，掃描名單由 {len(ALL_TICKERS)}
 # =========================================================================
 from collections import Counter
 reject = Counter() 
+scan_errors = {}
 
+open_by_tk = {}
+for _t in trade_history:
+    if _t.get('status') == 'OPEN':
+        open_by_tk.setdefault(_t['tk'], []).append(_t)
+
+# 每日更新「目前持倉」的現時指標
 for ticker in valid_tickers:
     try:
         rs = dict_rs.get(ticker)
@@ -928,13 +938,11 @@ for ticker in valid_tickers:
         catr = float(dict_atr.get(ticker))
         rsi_val = float(dict_rsi.get(ticker))
         
-        # 每日更新「目前持倉」的現時指標
-        for t in trade_history:
-            if t.get('status') == 'OPEN' and t.get('tk') == ticker:
-                if '超賣' in t.get('tag', ''):
-                    t['curr_metric'] = f"RSI: {int(rsi_val)}"
-                else:
-                    t['curr_metric'] = f"RS: {int(rs)}"
+        for t in open_by_tk.get(ticker, []):
+            if '超賣' in t.get('tag', ''):
+                t['curr_metric'] = f"RSI: {int(rsi_val)}"
+            else:
+                t['curr_metric'] = f"RS: {int(rs)}"
 
         if rs < PQR_SWING_MIN: continue
 
@@ -1190,8 +1198,9 @@ for ticker in valid_tickers:
             # 👇 將 features 傳畀 Discord
             send_discord_alert(ticker, tag_name, round(cp, 2), sl_p, tp_p, current_ticker_color, ticker_sources, tp1_price=tp1_price, features=trade_info['features'])
             
-            if not any(t.get('tk') == ticker and t.get('status') == 'OPEN' for t in trade_history):
+            if ticker not in open_by_tk:
                  trade_history.append(trade_info)
+                 open_by_tk.setdefault(ticker, []).append(trade_info)
             
             js_payload.append({
                 "ticker": ticker, "tag": tag_name, "curr_price": round(cp, 2), 
@@ -1201,17 +1210,25 @@ for ticker in valid_tickers:
             })
 
     except Exception as e:
-        pass
+        scan_errors[ticker] = repr(e)
 
 print(f"\n📊 掃描 {len(valid_tickers)} 隻，各條件不通過統計：")
 for k, v in reject.most_common():
     print(f"   {k:<15} 擋走 {v:>5} 隻 ({v/max(len(valid_tickers),1)*100:5.1f}%)")
 
+if scan_errors:
+    print(f"⚠️ 掃描期間有 {len(scan_errors)} 隻股票發生錯誤")
+    for err, cnt in Counter(scan_errors.values()).most_common(5):
+        print(f"   ×{cnt}  {err[:150]}")
+
 swing_results.sort(key=lambda x: x['rs'], reverse=True)
 short_term_results.sort(key=lambda x: x['rs'], reverse=True)
 
 # 保留 20000 條紀錄以確保歷史倉位對帳準確
-with open(HISTORY_FILE, "w", encoding="utf-8") as f: json.dump(trade_history[-20000:], f, indent=4)
+_open   = [x for x in trade_history if x.get('status') == 'OPEN']
+_closed = [x for x in trade_history if x.get('status') != 'OPEN']
+with open(HISTORY_FILE, "w", encoding="utf-8") as f:
+    json.dump(_open + _closed[-20000:], f, indent=4)
 
 # =========================================================================
 # 📊 額外擴充：將 Trade History 自動匯出為 CSV 方便 Excel 覆盤
@@ -1220,7 +1237,7 @@ import csv
 
 CSV_EXPORT_FILE = os.path.join(OUTPUT_DIR, "uat_trade_history.csv")
 
-if trade_history:
+if trade_history and IS_FINAL_RUN:
     # 💡 修復：動態收集所有出現過嘅 Keys，防止因欄位缺失而報錯
     all_keys = set()
     for t in trade_history:
@@ -1238,54 +1255,6 @@ if trade_history:
     except Exception as e:
         print(f"⚠️ CSV 匯出失敗: {e}")
 
-# =============================================================================
-# MODULE 6 — 大市主題與板塊熱度統計 (Market Themes & Sector Heat)
-# =============================================================================
-sector_performance = {}
-stealth_hot_stocks = []
-
-for ticker in valid_tickers:
-    try:
-        rs = dict_rs.get(ticker, 0)
-        rs_mom = dict_mom.get(ticker, 0)
-        cp = float(current_prices.get(ticker, 0))
-        c_vol = dict_curr_vol.get(ticker, 0)
-        v_ma20 = dict_vol_ma20.get(ticker, 1)
-        
-        # 篩選條件：RS極高 (>85) 且 近期動能向上 (>0) 且 成交量放大 (>1.5倍)
-        if rs >= 85 and rs_mom > 2 and c_vol > (v_ma20 * 1.5):
-            s_info = get_stock_info(ticker)
-            sector = s_info['sector']
-            mcap = s_info['mcap']
-            
-            # 統計板塊熱度
-            if sector not in sector_performance:
-                sector_performance[sector] = {'count': 0, 'tickers': []}
-            sector_performance[sector]['count'] += 1
-            sector_performance[sector]['tickers'].append(ticker)
-            
-            # 收集潛力異動股
-            stealth_hot_stocks.append({
-                'ticker': ticker,
-                'sector': sector,
-                'rs': round(rs, 0),
-                'mom': round(rs_mom, 1),
-                'price': cp,
-                'unit': "¥" if ticker.endswith(".T") else "$"
-            })
-    except:
-        pass
-
-# 按板塊熱度（強勢股數量）排序
-sorted_sectors = sorted(sector_performance.items(), key=lambda x: x[1]['count'], reverse=True)
-stealth_hot_stocks.sort(key=lambda x: x['rs'], reverse=True)
-
-# 轉為 JSON 傳給前端 HTML
-themes_data = {
-    "sectors": [{"sector": k, "count": v['count'], "tickers": v['tickers'][:5]} for k, v in sorted_sectors[:8]],
-    "stocks": stealth_hot_stocks[:20]
-}
-themes_data_str = json.dumps(themes_data)
 
 # =============================================================================
 # MODULE 7 — 總結算與 Discord 報告 (UAT 詳盡數據統一版)
@@ -1322,7 +1291,10 @@ def calculate_stats(history):
     wins = [t for t in closed if calc_true_pnl(t) > 0]
     return len(closed), len(wins), round(len(wins)/len(closed)*100, 1)
 
-total_closed, wins, win_rate = calculate_stats(trade_history)
+if IS_FINAL_RUN:
+    total_closed, wins, win_rate = calculate_stats(trade_history)
+else:
+    total_closed, wins, win_rate = 0, 0, 0
 
 if DISCORD_SUMMARY_WEBHOOK and IS_FINAL_RUN:
     # 1. 今日結案明細
@@ -1549,6 +1521,55 @@ if not IS_FINAL_RUN:
         pass
     print(f"⏭️ [{today_str}] 中途回測，略過 HTML 生成")
     raise SystemExit(0)
+
+# =============================================================================
+# MODULE 6 — 大市主題與板塊熱度統計 (Market Themes & Sector Heat)
+# =============================================================================
+sector_performance = {}
+stealth_hot_stocks = []
+
+for ticker in valid_tickers:
+    try:
+        rs = dict_rs.get(ticker, 0)
+        rs_mom = dict_mom.get(ticker, 0)
+        cp = float(current_prices.get(ticker, 0))
+        c_vol = dict_curr_vol.get(ticker, 0)
+        v_ma20 = dict_vol_ma20.get(ticker, 1)
+        
+        # 篩選條件：RS極高 (>85) 且 近期動能向上 (>0) 且 成交量放大 (>1.5倍)
+        if rs >= 85 and rs_mom > 2 and c_vol > (v_ma20 * 1.5):
+            s_info = get_stock_info(ticker)
+            sector = s_info['sector']
+            mcap = s_info['mcap']
+            
+            # 統計板塊熱度
+            if sector not in sector_performance:
+                sector_performance[sector] = {'count': 0, 'tickers': []}
+            sector_performance[sector]['count'] += 1
+            sector_performance[sector]['tickers'].append(ticker)
+            
+            # 收集潛力異動股
+            stealth_hot_stocks.append({
+                'ticker': ticker,
+                'sector': sector,
+                'rs': round(rs, 0),
+                'mom': round(rs_mom, 1),
+                'price': cp,
+                'unit': "¥" if ticker.endswith(".T") else "$"
+            })
+    except Exception:
+        pass
+
+# 按板塊熱度（強勢股數量）排序
+sorted_sectors = sorted(sector_performance.items(), key=lambda x: x[1]['count'], reverse=True)
+stealth_hot_stocks.sort(key=lambda x: x['rs'], reverse=True)
+
+# 轉為 JSON 傳給前端 HTML
+themes_data = {
+    "sectors": [{"sector": k, "count": v['count'], "tickers": v['tickers'][:5]} for k, v in sorted_sectors[:8]],
+    "stocks": stealth_hot_stocks[:20]
+}
+themes_data_str = json.dumps(themes_data)
 
 print("⏳ [8/8] 正在生成雙分頁量化儀表板...")
 
@@ -1901,11 +1922,11 @@ html = f"""<!DOCTYPE html>
                         <div class="font-black text-white text-lg" id="calc_entry">-</div>
                     </div>
                     <div class="bg-red-900/10 p-2 rounded-lg border border-red-900/50">
-                        <div class="text-[9px] text-red-400 uppercase font-bold">嚴格止損 (-2.5 ATR)</div>
+                        <div class="text-[9px] text-red-400 uppercase font-bold">嚴格止損 (1.5-2.0 ATR)</div>
                         <div class="font-black text-red-400 text-lg" id="calc_sl">-</div>
                     </div>
                     <div class="bg-emerald-900/10 p-2 rounded-lg border border-emerald-900/50">
-                        <div class="text-[9px] text-emerald-400 uppercase font-bold">目標止盈 (+4.5 ATR)</div>
+                        <div class="text-[9px] text-emerald-400 uppercase font-bold">目標止盈 (Trailing)</div>
                         <div class="font-black text-emerald-400 text-lg" id="calc_tp">-</div>
                     </div>
                     <div class="bg-amber-500/10 p-2 rounded-lg border border-amber-500/30 relative">
@@ -1930,7 +1951,7 @@ html = f"""<!DOCTYPE html>
 
     <main id="tab-charts" class="hidden flex-1 overflow-y-auto bg-slate-900 rounded-xl border border-slate-800 p-6 z-10 flex flex-col gap-6 shadow-lg">
         <div class="flex justify-between items-center border-b border-slate-800 pb-2">
-            <h2 class="text-2xl font-black text-white flex items-center gap-2">📈 歷史宏觀與持倉走勢 (最近 60 日)</h2>
+            <h2 class="text-2xl font-black text-white flex items-center gap-2">📈 歷史宏觀與持倉走勢 (最近 600 日)</h2>
             <div class="text-xs text-slate-500">底色反映當日大盤狀態 (紅=熊市防禦 / 黃=背馳警告 / 綠=牛市通行)</div>
         </div>
         <div class="grid grid-cols-1 gap-6">
