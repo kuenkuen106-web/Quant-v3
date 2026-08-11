@@ -40,7 +40,7 @@
         "status": "OPEN",
         "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
         "entry_metric": "RSI: 25",
-        "curr_metric": "RSI: 25",
+        "curr_metric": "RSI: 26",
         "sources": [
             "S&P600_\u5c0f\u578b"
         ],
@@ -53,7 +53,7 @@
             "amd": false,
             "ml_rsi": 25.6
         },
-        "days_held": 1,
+        "days_held": 2,
         "partial_tp_hit": false
     },
     {
@@ -64,8 +64,8 @@
         "tp": 4710.57,
         "initial_sl": 3583.14,
         "tp1_price": 4287.79,
-        "last_px": 3865.0,
-        "status": "OPEN",
+        "last_px": 3583.14,
+        "status": "\u274c STOP LOSS",
         "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
         "entry_metric": "RS: 92",
         "curr_metric": "RS: 92",
@@ -80,7 +80,10 @@
             "smc": true,
             "amd": false,
             "ml_rsi": 76.6
-        }
+        },
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-11"
     },
     {
         "date": "2026-08-10",
@@ -94,7 +97,7 @@
         "status": "OPEN",
         "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
         "entry_metric": "RS: 79",
-        "curr_metric": "RS: 79",
+        "curr_metric": "RS: 78",
         "sources": [
             "TOPIX_Mid400_\u4e2d\u578b"
         ],
@@ -106,7 +109,9 @@
             "smc": true,
             "amd": false,
             "ml_rsi": 76.5
-        }
+        },
+        "days_held": 1,
+        "partial_tp_hit": false
     },
     {
         "date": "2026-08-10",
@@ -120,7 +125,7 @@
         "status": "OPEN",
         "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
         "entry_metric": "RS: 76",
-        "curr_metric": "RS: 76",
+        "curr_metric": "RS: 75",
         "sources": [
             "TOPIX_Small500_\u5c0f\u578b"
         ],
@@ -132,6 +137,8 @@
             "smc": false,
             "amd": false,
             "ml_rsi": 76.9
-        }
+        },
+        "days_held": 1,
+        "partial_tp_hit": false
     }
 ]
