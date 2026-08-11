@@ -55,13 +55,14 @@ SWING_TIME_STOP_MIN_R = 1.0
 
 BENCH = ['SPY', '^VIX', '^N225', 'JPY=X']
 
-IS_END  = '2023-12-31'    # 呢個日期之前 = 開發區，可以自由調參
-OOS_END = '2025-06-30'    # 之後 = 驗證區，只准睇唔准改
+IS_END  = '2022-12-31'    # 2019-01 → 2022-12（4 年，含 2020 崩盤 + 2022 熊市）
+OOS_END = '2025-03-31'    # 2023-01 → 2025-03（2.25 年）
+                          # 2025-04 → 至今（1.4 年）
 
 # 👇 時光機設定：從 GitHub Actions 讀取要回溯幾多日 (預設回溯 10 日)
 # 假設你的腳本內新增一個模式
-START_DAYS = 500
-END_DAYS = 0
+START_DAYS = 2780
+END_DAYS   = int(os.environ.get("UAT_END_DAYS", "0"))
 
 raw_days = os.environ.get("UAT_DAYS_AGO", "10")
 SIMULATE_DAYS_AGO = int(raw_days)
@@ -504,7 +505,8 @@ if SIMULATE_DAYS_AGO > 0:
 
 # 👇 獲取模擬當日的日期字串
 today_str = closes.index[-1].strftime('%Y-%m-%d')
-print(f"📅 [UAT] 模擬今日日期：{today_str}")
+_p = 'IS' if today_str <= IS_END else ('OOS' if today_str <= OOS_END else 'FWD')
+print(f"📅 [UAT] 模擬今日：{today_str} | 樣本期間：{_p}")
 
 # =============================================================================
 # MODULE 3 — 雙市場宏觀剖析 (FTD, 市寬, 派發日 獨立計算)
