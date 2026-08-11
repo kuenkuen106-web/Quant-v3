@@ -101,3 +101,29 @@ jobs:
             docs/UAT/index.html
             docs/UAT/uat_trade_history*.json
             docs/UAT/uat_trade_history*.csv
+
+      - name: 提交到 main（含 rebase 重試）
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add docs/UAT
+          echo "--- 準備 commit 嘅檔案 ---"
+          git status --short docs/UAT
+          git commit -m "UAT ${{ inputs.exit_mode }} pct${{ inputs.pct_mode }} ${{ inputs.start_days }}→${{ inputs.stop_days }}" \
+            || { echo "⚠️ 無變更可提交"; exit 0; }
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main && git push origin main; then
+              echo "✅ 第 $i 次 push 成功"; exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            echo "⚠️ 第 $i 次失敗，10 秒後重試..."; sleep 10
+          done
+          echo "❌ 5 次都 push 唔到，請去 Artifacts 下載"; exit 1
+
+      - name: 顯示 Dashboard 連結
+        if: success()
+        run: |
+          echo "### 🕰️ UAT Dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "https://kuenkuen106-web.github.io/Quant-v3/UAT/" >> $GITHUB_STEP_SUMMARY
+          echo "本批：\`${{ inputs.start_days }}\` → \`${{ inputs.stop_days }}\`" >> $GITHUB_STEP_SUMMARY
+
