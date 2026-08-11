@@ -1299,7 +1299,7 @@ with open(HISTORY_FILE, "w", encoding="utf-8") as f:
 # =========================================================================
 import csv
 
-CSV_EXPORT_FILE = os.path.join(OUTPUT_DIR, "uat_trade_history.csv")
+CSV_EXPORT_FILE = os.path.join(OUTPUT_DIR, f"uat_trade_history{_hs}.csv")
 
 if trade_history and IS_FINAL_RUN:
     # 💡 修復：動態收集所有出現過嘅 Keys，防止因欄位缺失而報錯
@@ -1647,7 +1647,7 @@ _bt_dates   = [t['date'] for t in trade_history if t.get('date')]
 bench_start = min(_bt_dates) if _bt_dates else closes.index[0].strftime('%Y-%m-%d')
 
 def _perf(eq):
-    if len(eq) < 2: return {'total': 0.0, 'cagr': 0.0, 'mdd': 0.0}
+    if len(eq) < 2: return {'total': 0.0, 'cagr': 0.0, 'mdd': 0.0, '_raw': 0.0}
     total = float(eq.iloc[-1] / eq.iloc[0] - 1)
     mdd   = float((eq / eq.cummax() - 1).min())
     return {'total': round(total*100, 1), 'cagr': 0.0, 'mdd': round(mdd*100, 1), '_raw': total}
