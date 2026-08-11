@@ -1,3 +1,4 @@
 docs/UAT/market_data_cache.pkl
 prod_market_data_cache.pkl
 *.pkl
+*.pkl

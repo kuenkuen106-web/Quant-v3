@@ -36,8 +36,8 @@
         "tp": 170.02,
         "initial_sl": 100.69,
         "tp1_price": 135.35,
-        "last_px": 118.0,
-        "status": "OPEN",
+        "last_px": 128.27,
+        "status": "\u274c \u89f8\u767c 3 \u65e5\u6642\u9593\u6b62\u640d",
         "tag": "\ud83d\udcc9 \u6975\u5ea6\u8d85\u8ce3",
         "entry_metric": "RSI: 25",
         "curr_metric": "RSI: 26",
@@ -53,8 +53,9 @@
             "amd": false,
             "ml_rsi": 25.6
         },
-        "days_held": 2,
-        "partial_tp_hit": false
+        "days_held": 3,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-11"
     },
     {
         "date": "2026-08-10",
