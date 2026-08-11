@@ -1,0 +1,66 @@
+[
+    {
+        "date": "2026-08-10",
+        "tk": "7550.T",
+        "px": 11595.0,
+        "sl": 10888.43,
+        "tp": 13714.71,
+        "initial_sl": 10888.43,
+        "tp1_price": 13008.14,
+        "last_px": 11595.0,
+        "status": "OPEN",
+        "tag": "\u26a1 \u7f3a\u53e3\u52d5\u80fd",
+        "entry_metric": "RS: 93",
+        "curr_metric": "RS: 94",
+        "fx_entry": 157.891,
+        "sources": [
+            "TOPIX_Mid400_\u4e2d\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": true,
+            "amd": false,
+            "ml_rsi": 81.9,
+            "rv_pct": 0.623,
+            "bd_pct": 1.0
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false
+    },
+    {
+        "date": "2026-08-07",
+        "tk": "ETSY",
+        "px": 85.55,
+        "sl": 80.96,
+        "tp": null,
+        "initial_sl": 80.96,
+        "tp1_price": 94.73,
+        "last_px": 80.96,
+        "status": "\u274c STOP LOSS",
+        "tag": "\ud83d\udca5 BB \u64e0\u58d3",
+        "entry_metric": "",
+        "curr_metric": "",
+        "sources": [
+            "S&P600_\u5c0f\u578b"
+        ],
+        "sector": "N/A",
+        "mcap": 0,
+        "feature_score": 2,
+        "features": {
+            "mss": true,
+            "smc": false,
+            "amd": true,
+            "ml_rsi": 52.8,
+            "rv_pct": 0.188,
+            "bd_pct": 0.889
+        },
+        "period": "FWD",
+        "days_held": 1,
+        "partial_tp_hit": false,
+        "close_date": "2026-08-10"
+    }
+]

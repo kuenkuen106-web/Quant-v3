@@ -1,0 +1,3 @@
+﻿sl,days_held,mcap,features,fx_entry,entry_metric,sources,tk,tp,initial_sl,date,period,tp1_price,px,tag,sector,feature_score,curr_metric,partial_tp_hit,close_date,status,last_px
+10888.43,1,0,"{'mss': True, 'smc': True, 'amd': False, 'ml_rsi': 81.9, 'rv_pct': 0.623, 'bd_pct': 1.0}",157.891,RS: 93,['TOPIX_Mid400_中型'],7550.T,13714.71,10888.43,2026-08-10,FWD,13008.14,11595.0,⚡ 缺口動能,N/A,2,RS: 94,False,,OPEN,11595.0
+80.96,1,0,"{'mss': True, 'smc': False, 'amd': True, 'ml_rsi': 52.8, 'rv_pct': 0.188, 'bd_pct': 0.889}",,,['S&P600_小型'],ETSY,,80.96,2026-08-07,FWD,94.73,85.55,💥 BB 擠壓,N/A,2,,False,2026-08-10,❌ STOP LOSS,80.96
