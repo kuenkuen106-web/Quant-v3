@@ -963,6 +963,7 @@ print(f"🧹 過濾成交量低迷股票後，掃描名單由 {len(ALL_TICKERS)}
 from collections import Counter
 reject = Counter() 
 scan_errors = {}
+_blocked = Counter()
 
 open_by_tk = {}
 for _t in trade_history:
@@ -1110,11 +1111,11 @@ for ticker in valid_tickers:
         sl_p, tp_p, tp1_price, risk_per_share = 0, 0, 0, 0
 
         if (is_vcp or is_bb_sqz):
-            if is_red_light: continue # 熊市嚴禁突破建倉
+            if is_red_light: _blocked['swing_red_light'] += 1; continue # 熊市嚴禁突破建倉
 
             # 👇 新增：美股如果處於「🟡 震盪微牛」，假突破極多，直接封印！
             # 只有日股（走勢較順）先容許喺黃燈做突破
-            if not is_jp and is_mild_bull: continue
+            if not is_jp and is_mild_bull: _blocked['swing_us_mild_bull'] += 1; continue
             
             tag_name = "🏆 VCP 突破" if is_vcp else "💥 BB 擠壓"
             seasonal_vix_multiplier = 1.2 if current_month == 7 else 1.0 
@@ -1278,6 +1279,9 @@ for ticker in valid_tickers:
 print(f"\n📊 掃描 {len(valid_tickers)} 隻，各條件不通過統計：")
 for k, v in reject.most_common():
     print(f"   {k:<15} 擋走 {v:>5} 隻 ({v/max(len(valid_tickers),1)*100:5.1f}%)")
+
+if _blocked:
+    print(f"🚧 Regime 封鎖統計：{dict(_blocked)}")
 
 if scan_errors:
     print(f"⚠️ 掃描期間有 {len(scan_errors)} 隻股票發生錯誤")
@@ -1633,6 +1637,26 @@ themes_data = {
     "stocks": stealth_hot_stocks[:20]
 }
 themes_data_str = json.dumps(themes_data)
+
+# =============================================================================
+# 🔬 診斷 A — 出場原因分佈（每個策略點樣死）
+# =============================================================================
+from collections import Counter as _Cnt
+_exit_stats = {}
+for _t in trade_history:
+    if _t.get('status') == 'OPEN': continue
+    _key = (_t.get('tag', '?'), _t.get('status', '?'))
+    if _key not in _exit_stats:
+        _exit_stats[_key] = {'n': 0, 'pnl': 0.0}
+    _exit_stats[_key]['n'] += 1
+    _exit_stats[_key]['pnl'] += calc_true_pnl(_t)
+
+print("\n" + "="*78)
+print("🔬 出場原因分佈（按總 P&L 由差到好排）")
+print("="*78)
+for (_tag, _st), _v in sorted(_exit_stats.items(), key=lambda x: x[1]['pnl']):
+    print(f"   {_tag:<12} {_st:<24} {_v['n']:>4}單 | 總 {_v['pnl']:>9.0f} | 每單 {_v['pnl']/_v['n']:>7.0f}")
+print("="*78 + "\n")
 
 # =============================================================================
 # 📊 MODULE 6.5 — Benchmark 對照組（A: Buy&Hold SPY / B: 每月 RS Top20）
