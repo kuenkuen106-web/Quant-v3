@@ -69,6 +69,7 @@ PCT_BASE_DD    = 0.50   # 底部深度：淺過自己過去一年中位數
 PCT_GAP_ATR    = 0.8    # 缺口：至少 0.8 倍 ATR（取代固定 3%）
 PCT_DMA50_OS   = 0.10   # 超賣：偏離度處於過去一年最極端 10%
 OVERSOLD_TP1_R = 1
+BREAKOUT_LOOKBACK = 20
 
 print(f"📊 門檻模式：{'百分位 (自適應)' if USE_PCT_MODE else '絕對值 (舊版)'}")
 
@@ -864,7 +865,7 @@ rec_volat = _rec_volat_hist.iloc[-1]
 sma50_all = closes.rolling(50).mean()
 sma200_all = closes.rolling(200).mean()
 max120_all = closes.rolling(120).max() # 半年高位
-max10_prev_all = closes.shift(1).rolling(10).max() # 尋日為止嘅10日高位 (阻力線)
+max10_prev_all = closes.shift(1).rolling(BREAKOUT_LOOKBACK).max() # 尋日為止嘅10日高位 (阻力線)
 
 # DMA50 (偏離度) 與 SMC 平均實體
 dma50_all = (closes - sma50_all) / sma50_all
@@ -1127,7 +1128,9 @@ for ticker in valid_tickers:
                 if is_mild_bull or current_month == 7:
                     sl_p = round(cp - (1.0 * catr * seasonal_vix_multiplier), 2)
                 else:
-                    sl_p = round(cp - 1.5 * catr, 2)
+                    # 止損放喺突破 K 線最低位之下，而唔係由收市價度落嚟
+                    _struct_sl = l_val - 0.25 * catr
+                    sl_p = round(min(_struct_sl, cp - 1.5 * catr), 2)
             else:
                 # 美股雜訊大，必須強制給予最少 1.5 ATR 的呼吸空間，防震倉！
                 sl_p = round(cp - 1.5 * catr, 2)
