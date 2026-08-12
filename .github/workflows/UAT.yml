@@ -56,7 +56,8 @@ jobs:
       - name: 安裝套件
         run: |
           python -m pip install --upgrade pip
-          pip install pandas numpy yfinance matplotlib requests lxml html5lib fake-useragent
+          pip install -r requirements.txt
+          pip freeze > docs/UAT/pip-freeze.txt
 
       - name: 顯示本批設定
         run: |
