@@ -62,12 +62,13 @@ BENCH = ['SPY', '^VIX', '^N225', 'JPY=X']
 USE_PCT_MODE = os.environ.get("PCT_MODE", "1") == "1"
 
 PCT_LOOKBACK   = 252    # 自我參照窗口（約一年交易日）
-PCT_LIQUIDITY  = 0.60   # 流動性：只取當日成交額最高嘅 40%
-PCT_ELITE_LIQ  = 0.85   # 缺口策略專用：最高嘅 15%
+PCT_LIQUIDITY  = 0.35 #0.60   # 流動性：只取當日成交額最高嘅 40%
+PCT_ELITE_LIQ  = 0.70 #0.85   # 缺口策略專用：最高嘅 15%
 PCT_REC_VOLAT  = 0.30   # 近期波幅：處於自己過去一年最靜嘅 30%
 PCT_BASE_DD    = 0.50   # 底部深度：淺過自己過去一年中位數
 PCT_GAP_ATR    = 0.8    # 缺口：至少 0.8 倍 ATR（取代固定 3%）
 PCT_DMA50_OS   = 0.10   # 超賣：偏離度處於過去一年最極端 10%
+OVERSOLD_TP1_R = 1
 
 print(f"📊 門檻模式：{'百分位 (自適應)' if USE_PCT_MODE else '絕對值 (舊版)'}")
 
@@ -1212,7 +1213,7 @@ for ticker in valid_tickers:
             entry_metric = f"RSI: {int(rsi_val)}"
             
             # 搶反彈見好就收，保留 1R 觸發 TP1，保本最重要！
-            tp1_price = round(cp + (risk_per_share * PARTIAL_TP_R), 2)
+            tp1_price = round(cp + (risk_per_share * OVERSOLD_TP1_R), 2)
             
             _u = "¥" if is_jp else "$"
             short_term_results.append({
