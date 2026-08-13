@@ -73,6 +73,27 @@ BREAKOUT_LOOKBACK = 20
 
 print(f"📊 門檻模式：{'百分位 (自適應)' if USE_PCT_MODE else '絕對值 (舊版)'}")
 
+# =========================================================================
+# 🅱️ RS 核心策略（由 benchmark B 演化）— 每月換倉，唔用 SL/TP
+# =========================================================================
+RS_TAG        = "🅱️ RS 核心"
+USE_RS_STRAT  = os.environ.get("USE_RS_STRAT", "1") == "1"
+RS_TOP_N      = int(os.environ.get("RS_TOP_N", "20"))
+
+# 👇 分層條件，全部預設關閉。一次只開一個測試！
+RS_USE_REGIME     = os.environ.get("RS_USE_REGIME", "0") == "1"      # L1 大市 200MA 之下唔開倉
+RS_USE_TREND      = os.environ.get("RS_USE_TREND", "0") == "1"       # L2 個股 cp > 50MA > 200MA
+RS_MAX_EXTENDED   = float(os.environ.get("RS_MAX_EXTENDED", "0"))    # L3 距 50MA 上限（0=不限，例 0.25）
+RS_MAX_PER_SECTOR = int(os.environ.get("RS_MAX_PER_SECTOR", "0"))    # L4 同板塊上限（0=不限）
+RS_STOP_PCT       = float(os.environ.get("RS_STOP_PCT", "0"))        # L5 硬止損（0=冇，例 0.15）
+RS_HOLD_WINNERS   = os.environ.get("RS_HOLD_WINNERS", "0") == "1"    # L6 仍在 Top N 就唔換倉（慳成本）
+
+print(f"🅱️ RS 核心策略={USE_RS_STRAT} | TopN={RS_TOP_N} | "
+      f"regime={RS_USE_REGIME} trend={RS_USE_TREND} ext={RS_MAX_EXTENDED} "
+      f"sector={RS_MAX_PER_SECTOR} stop={RS_STOP_PCT} hold={RS_HOLD_WINNERS}")
+
+
+
 IS_END  = '2022-12-31'    # 2019-01 → 2022-12（4 年，含 2020 崩盤 + 2022 熊市）
 OOS_END = '2025-03-31'    # 2023-01 → 2025-03（2.25 年）
                           # 2025-04 → 至今（1.4 年）
@@ -725,7 +746,18 @@ for trade in trade_history:
             # 👇 新增：累加持倉日數 (Days Held)
             days_held = trade.get('days_held', 0) + 1
             trade['days_held'] = days_held
-            
+
+            # ── 🅱️ RS 核心倉：只喺換倉日平倉，唔行 SL/TP/trailing ──
+            if RS_TAG in strat_tag:
+                if RS_STOP_PCT > 0 and now_px <= buy_px * (1 - RS_STOP_PCT):
+                    trade['last_px'] = round(buy_px * (1 - RS_STOP_PCT), 2)
+                    trade['status']  = '❌ RS 硬止損'
+                    trade['close_date'] = today_str
+                    trade['days_held'] = (pd.to_datetime(today_str) - pd.to_datetime(trade['date'])).days
+                    if trade.get('fx_entry') and today_fx: trade['fx_exit'] = round(today_fx, 4)
+                    closed_this_run.append(trade)
+                continue
+
             if now_px > buy_px * 10 or now_px < buy_px * 0.1: 
                 trade['status'], trade['close_date'] = '⚠️ 價格異常 (疑似拆股)', today_str
                 closed_this_run.append(trade)
@@ -1292,6 +1324,100 @@ if scan_errors:
     for err, cnt in Counter(scan_errors.values()).most_common(5):
         print(f"   ×{cnt}  {err[:150]}")
 
+# =============================================================================
+# 🅱️ RS 核心策略 — 每月第一個交易日換倉
+# =============================================================================
+_prev_day    = closes.index[-2] if len(closes.index) >= 2 else None
+IS_REBAL_DAY = (_prev_day is not None) and (closes.index[-1].month != _prev_day.month)
+
+if USE_RS_STRAT and IS_REBAL_DAY:
+    print(f"🅱️ [{today_str}] 月度換倉日")
+
+    # ── (1) 選新 Top N ──
+    _us_ok = (not RS_USE_REGIME) or (spx_price  > spx_200ma)
+    _jp_ok = (not RS_USE_REGIME) or (n225_price > n225_200ma)
+
+    _cands = []
+    for _tk in valid_tickers:
+        _r = dict_rs.get(_tk)
+        if _r is None or pd.isna(_r): continue
+
+        _is_jp = _tk.endswith('.T')
+        if _is_jp and not _jp_ok: continue
+        if (not _is_jp) and not _us_ok: continue
+
+        _cp = current_prices.get(_tk)
+        if _cp is None or pd.isna(_cp) or float(_cp) <= 0: continue
+        _cp = float(_cp)
+
+        if RS_USE_TREND:                                   # L2
+            _s50, _s200 = dict_sma50.get(_tk), dict_sma200.get(_tk)
+            if _s50 is None or _s200 is None or pd.isna(_s50) or pd.isna(_s200): continue
+            if not (_cp > float(_s50) > float(_s200)): continue
+
+        if RS_MAX_EXTENDED > 0:                            # L3
+            _d = dict_dma50.get(_tk)
+            if _d is None or pd.isna(_d) or float(_d) > RS_MAX_EXTENDED: continue
+
+        _cands.append((float(_r), _tk, _cp))
+
+    _cands.sort(reverse=True)
+
+    # ── (2) 板塊上限（L4，只喺開啟時先查 sector，避免拖慢）──
+    _picks, _sec_cnt = [], {}
+    for _r, _tk, _cp in _cands:
+        if len(_picks) >= RS_TOP_N: break
+        if RS_MAX_PER_SECTOR > 0:
+            _sec = get_stock_info(_tk).get('sector', 'N/A')
+            if _sec_cnt.get(_sec, 0) >= RS_MAX_PER_SECTOR: continue
+            _sec_cnt[_sec] = _sec_cnt.get(_sec, 0) + 1
+        _picks.append((_r, _tk, _cp))
+
+    _pick_set = {t for _, t, _ in _picks}
+
+    # ── (3) 平掉舊倉（L6：仍喺名單內就唔郁）──
+    _kept = set()
+    for _t in trade_history:
+        if _t.get('status') != 'OPEN' or RS_TAG not in _t.get('tag', ''): continue
+        _tk = _t.get('tk')
+        if RS_HOLD_WINNERS and _tk in _pick_set:
+            _kept.add(_tk)
+            continue
+        _px = current_prices.get(_tk)
+        if _px is None or pd.isna(_px): continue
+        _t['last_px']    = round(float(_px), 2)
+        _t['status']     = '✅ RS 換倉平倉'
+        _t['close_date'] = today_str
+        _t['days_held']  = (pd.to_datetime(today_str) - pd.to_datetime(_t['date'])).days
+        if _t.get('fx_entry') and today_fx: _t['fx_exit'] = round(today_fx, 4)
+        closed_this_run.append(_t)
+
+    # ── (4) 開新倉 ──
+    _opened = 0
+    for _r, _tk, _cp in _picks:
+        if _tk in _kept: continue                       # 已持有，唔重複開
+        _sl = round(_cp * (1 - RS_STOP_PCT), 2) if RS_STOP_PCT > 0 else round(_cp * 0.5, 2)
+        _info = {
+            'date': today_str, 'tk': _tk, 'px': round(_cp, 2),
+            'sl': _sl, 'tp': None, 'initial_sl': _sl, 'tp1_price': None,
+            'last_px': round(_cp, 2), 'status': 'OPEN', 'tag': RS_TAG,
+            'entry_metric': f"RS: {int(_r)}", 'curr_metric': f"RS: {int(_r)}",
+            'sources': TICKER_MAP.get(_tk, []),
+            'period': ('IS' if today_str <= IS_END else 'OOS' if today_str <= OOS_END else 'FWD'),
+            'partial_tp_hit': False,
+        }
+        if RS_MAX_PER_SECTOR > 0:
+            _si = get_stock_info(_tk)
+            _info['sector'], _info['mcap'] = _si.get('sector', 'N/A'), _si.get('mcap', 0)
+        if _tk.endswith('.T') and 'JPY=X' in current_prices and not pd.isna(current_prices['JPY=X']):
+            _info['fx_entry'] = round(float(current_prices['JPY=X']), 4)
+
+        trade_history.append(_info)
+        open_by_tk.setdefault(_tk, []).append(_info)
+        _opened += 1
+
+    print(f"🅱️ 候選 {len(_cands)} 隻 → 選中 {len(_picks)} 隻 | 保留 {len(_kept)} | 新開 {_opened}")
+
 swing_results.sort(key=lambda x: x['rs'], reverse=True)
 short_term_results.sort(key=lambda x: x['rs'], reverse=True)
 
@@ -1752,16 +1878,25 @@ except Exception as e:
     print(f"⚠️ Benchmark B 失敗: {e}")
 
 # --- 你的策略（每倉位口徑，方便同 B 直接比）---
-_cl = [t for t in trade_history if t.get('status') != 'OPEN']
-if _cl:
-    _exp_pct  = sum(calc_true_pnl(t) for t in _cl) / len(_cl) / TICKETSIZE
-    _avg_days = max(sum(t.get('days_held', 1) for t in _cl) / len(_cl), 1)
-    bench_result['strategy'] = {
-        'trades': len(_cl),
-        'exp_pct': round(_exp_pct * 100, 2),
-        'avg_days': round(_avg_days, 1),
-        'bp_day': round(_exp_pct / _avg_days * 10000, 2),   # 👈 同 B 同一把尺
-    }
+_cl_all = [t for t in trade_history if t.get('status') != 'OPEN']
+_by_tag = {}
+for _t in _cl_all:
+    _by_tag.setdefault(_t.get('tag', '?'), []).append(_t)
+
+def _strat_row(lst):
+    if not lst: return None
+    _exp  = sum(calc_true_pnl(t) for t in lst) / len(lst) / TICKETSIZE
+    _days = max(sum(t.get('days_held', 1) for t in lst) / len(lst), 1)
+    return {'trades': len(lst), 'exp_pct': round(_exp*100, 2),
+            'avg_days': round(_days, 1), 'bp_day': round(_exp/_days*10000, 2)}
+
+bench_result['strategy']    = _strat_row(_cl_all)
+bench_result['by_strategy'] = {k: _strat_row(v) for k, v in _by_tag.items()}
+
+print("\n📊 各策略 bp/日/倉位（同 B 直接可比）：")
+for _k, _v in sorted(bench_result['by_strategy'].items(),
+                     key=lambda x: x[1]['bp_day'], reverse=True):
+    print(f"   {_k:<14} {_v['bp_day']:>8} bp | {_v['trades']:>4}單 | 平均 {_v['avg_days']}日")
 
 print("\n" + "="*68)
 print(f"📊 BENCHMARK 對照（由 {bench_start} 起）")
@@ -2228,6 +2363,7 @@ html = f"""<!DOCTYPE html>
                     <option value="BB">💥 BB 擠壓</option>
                     <option value="缺口">⚡ 缺口動能</option>
                     <option value="超賣">📉 極度超賣</option>
+                    <option value="RS 核心">🅱️ RS 核心</option>
                 </select>
             </div>
             <div>
@@ -3178,8 +3314,10 @@ function renderThemesTab() {{
                     <td class="p-2 text-[10px] text-slate-400 truncate max-w-[100px]">${{t.sector || 'N/A'}}</td>
                     <td class="p-2 text-[10px] text-slate-400 font-mono text-right">${{formatMcap(t.mcap)}}</td>
                     <td class="p-2 text-center">
-                        ${{t.partial_tp_hit 
-                            ? '<span class="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 text-[10px] font-black">🎯 ' + Math.round(PARTIAL_PCT*100) + '% 已止盈 (' + Math.round((1-PARTIAL_PCT)*100) + '% 放飛)</span>'
+                        ${{t.tag && t.tag.includes('RS 核心')
+                            ? '<span class="text-lime-400 bg-lime-400/10 px-2 py-0.5 rounded border border-lime-500/20 text-[10px] font-black">🅱️ 月度持有</span>'
+                            : t.partial_tp_hit 
+                            ? `<span class="text-amber-400 bg-amber-400/10 px-2 py-0.5 rounded border border-amber-500/20 text-[10px] font-black">🎯 ${{Math.round(PARTIAL_PCT*100)}}% 已止盈</span>` 
                             : '<span class="text-cyan-400 bg-cyan-400/10 px-2 py-0.5 rounded border border-cyan-500/20 text-[10px] font-black">⏳ 100% 正常持倉中</span>'
                         }}
                     </td>
@@ -3222,6 +3360,8 @@ function renderThemesTab() {{
                         if (t.status.includes("MAX TP")) return '<span class="text-fuchsia-400 font-bold">🏆 終極止賺</span>';
                         if (t.status.includes("TRAIL EXIT")) return '<span class="text-blue-400 font-bold">🚀 放飛平倉</span>';
                         if (t.status.includes("⏱️")) return '<span class="text-slate-400 font-bold">⏱️ 時間止損</span>'; 
+                        if (t.status.includes("RS 換倉")) return '<span class="text-lime-400 font-bold">🔄 月度換倉</span>';
+                        if (t.status.includes("RS 硬止損")) return '<span class="text-red-400 font-bold">🛑 RS 止損</span>';
                         if (t.status.includes("✅")) return '<span class="text-emerald-400 font-bold">🎯 止盈</span>';
                         return '<span class="text-red-400 font-bold">🛑 止損</span>';
                     }})()}}</td>
