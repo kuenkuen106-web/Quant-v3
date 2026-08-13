@@ -30,6 +30,14 @@ on:
         description: '紀錄檔後綴（A/B 對照用，例如 _pct 或 _abs）'
         required: false
         default: '_pct'
+      use_rs_strat:      {description: 'RS 核心策略 1/0', type: choice, options: ['1','0'], default: '1'}
+      rs_top_n:          {description: 'Top N', default: '20'}
+      rs_use_regime:     {description: 'L1 大市過濾 1/0', type: choice, options: ['0','1'], default: '0'}
+      rs_use_trend:      {description: 'L2 個股趨勢 1/0', type: choice, options: ['0','1'], default: '0'}
+      rs_max_extended:   {description: 'L3 距50MA上限 0=不限', default: '0'}
+      rs_max_per_sector: {description: 'L4 板塊上限 0=不限', default: '0'}
+      rs_stop_pct:       {description: 'L5 硬止損 0=冇', default: '0'}
+      rs_hold_winners:   {description: 'L6 保留仍在榜 1/0', type: choice, options: ['0','1'], default: '0'}
 
 permissions:
   contents: write
