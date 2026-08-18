@@ -8,7 +8,7 @@ cycler==0.12.1
 fake-useragent==2.2.0
 fonttools==4.63.0
 html5lib==1.1
-idna==3.18
+idna==3.19
 kiwisolver==1.5.0
 lxml==6.1.1
 matplotlib==3.11.1
