@@ -546,6 +546,17 @@ document.getElementById('open-tbody').innerHTML = opens.length ? opens.map(t=>{
 # =============================================================================
 # 入口
 # =============================================================================
+def _jdef(o):
+    """JSON 序列化 fallback：處理 numpy / pandas 型別"""
+    if isinstance(o, np.bool_):    return bool(o)
+    if isinstance(o, np.integer):  return int(o)
+    if isinstance(o, np.floating):
+        return None if np.isnan(o) else float(o)
+    if isinstance(o, np.ndarray):  return o.tolist()
+    if isinstance(o, pd.Timestamp): return o.strftime('%Y-%m-%d')
+    if pd.isna(o):                 return None
+    return str(o)
+
 def build_dashboard(trade_history, closes, out_dir, today_str, cfg=None,
                     regime=None, filename="index.html"):
     cfg = cfg or {}
@@ -554,9 +565,9 @@ def build_dashboard(trade_history, closes, out_dir, today_str, cfg=None,
     D = _analyse(trade_history, closes, cfg)
 
     html = (_TPL
-            .replace("__DATA__", json.dumps(D, ensure_ascii=False))
-            .replace("__HIST__", json.dumps(trade_history, ensure_ascii=False))
-            .replace("__REGIME__", json.dumps(regime, ensure_ascii=False))
+            .replace("__DATA__", json.dumps(D, ensure_ascii=False, default=_jdef))
+            .replace("__HIST__", json.dumps(trade_history, ensure_ascii=False, default=_jdef))
+            .replace("__REGIME__", json.dumps(regime, ensure_ascii=False, default=_jdef))
             .replace("__TODAY__", str(today_str))
             .replace("__TOPN__", str(D['kpi']['top_n']))
             .replace("__NMONTHS__", str(D['kpi']['months']))
