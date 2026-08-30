@@ -88,13 +88,24 @@ jobs:
 
       - name: 逐日跑回測
         env:
+          PYTHONUNBUFFERED: "1"
           DISCORD_BACKTEST_WEBHOOK_URL: ${{ secrets.DISCORD_BACKTEST_WEBHOOK_URL }}
           DISCORD_BACKTEST_SUMMARY_WEBHOOK: ${{ secrets.DISCORD_BACKTEST_SUMMARY_WEBHOOK }}
           EXIT_MODE: ${{ inputs.exit_mode }}
           PCT_MODE: ${{ inputs.pct_mode }}
           HISTORY_SUFFIX: ${{ inputs.history_suffix }}
           UAT_END_DAYS: ${{ inputs.stop_days }}
+          USE_LEGACY: ${{ inputs.use_legacy }}
+          USE_RS_STRAT: ${{ inputs.use_rs_strat }}
+          RS_TOP_N: ${{ inputs.rs_top_n }}
+          RS_USE_REGIME: ${{ inputs.rs_use_regime }}
+          RS_USE_TREND: ${{ inputs.rs_use_trend }}
+          RS_MAX_EXTENDED: ${{ inputs.rs_max_extended }}
+          RS_MAX_PER_SECTOR: ${{ inputs.rs_max_per_sector }}
+          RS_STOP_PCT: ${{ inputs.rs_stop_pct }}
+          RS_HOLD_WINNERS: ${{ inputs.rs_hold_winners }}
         run: |
+          echo "🔎 ENV | EXT=[$RS_MAX_EXTENDED] STOP=[$RS_STOP_PCT] HOLD=[$RS_HOLD_WINNERS]"
           for d in $(seq ${{ inputs.start_days }} -1 ${{ inputs.stop_days }}); do
             if [ $((d % 50)) -eq 0 ]; then echo "===== 剩餘 $d 日 ====="; fi
             UAT_DAYS_AGO=$d python LHK_trading_script_backtest_v3.py \
