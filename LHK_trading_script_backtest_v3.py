@@ -2029,8 +2029,8 @@ from rs_dashboard import build_dashboard
 build_dashboard(
     trade_history, closes, OUTPUT_DIR, today_str,
     cfg={'top_n': RS_TOP_N, 'cost': ROUND_TRIP_COST, 'ticket': TICKETSIZE},
-    regime=[{'label': '🇺🇸 美股', 'ok': spx_price > spx_200ma, 'text': us_regime},
-            {'label': '🇯🇵 日股', 'ok': n225_price > n225_200ma, 'text': jp_regime}],
+    regime=[{'label':'🇺🇸 美股','ok':bool(spx_price > spx_200ma),'text':us_regime},
+            {'label':'🇯🇵 日股','ok':bool(n225_price > n225_200ma),'text':jp_regime}],
 )
 
 
