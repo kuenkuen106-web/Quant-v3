@@ -122,7 +122,8 @@ jobs:
             docs/UAT/uat_trade_history*.json
             docs/UAT/uat_trade_history*.csv
 
-      - name: 提交到 main（含 rebase 重試）
+      - name: 提交到 main（含 rebase 重試
+        if: always()
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
