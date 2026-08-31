@@ -50,8 +50,12 @@ def _analyse(trade_history, closes, cfg):
     cost = cfg.get('cost', 0.003)
     top_n = cfg.get('top_n', 20)
 
-    closed = [t for t in trade_history if t.get('status') != 'OPEN']
-    opens = [t for t in trade_history if t.get('status') == 'OPEN']
+    tag = cfg.get('tag', 'RS 核心')          # 只分析 RS 核心
+    def _hit(t): return (not tag) or (tag in str(t.get('tag', '')))
+    closed = [t for t in trade_history if t.get('status') != 'OPEN' and _hit(t)]
+    opens  = [t for t in trade_history if t.get('status') == 'OPEN' and _hit(t)]
+    if not closed:
+        print(f"⚠️ 揾唔到任何 tag 含「{tag}」嘅已結案交易 — dashboard 會係空白")
 
     # ---- 逐單回報（扣成本）----
     rows = []
@@ -73,6 +77,11 @@ def _analyse(trade_history, closes, cfg):
         if r['date']:
             cohorts.setdefault(r['date'], []).append(r)
     months = sorted(cohorts.keys())
+    _avg = len(rows) / max(len(months), 1)
+    print(f"🔎 換倉檢查：{len(months)} 個換倉日 · 平均每次 {_avg:.1f} 隻")
+    if _avg < top_n * 0.5:
+        print(f"⚠️ 每次開倉數 ({_avg:.1f}) 遠低於 Top{top_n} — "
+              f"可能撈咗其他策略嘅單，或者換倉判斷有問題")
 
     m_ret, m_n, m_names, m_sec, m_mkt = [], [], [], [], []
     for d in months:
