@@ -16,6 +16,11 @@ on:
         type: choice
         options: ['false', 'true']
         default: 'false'
+      use_legacy:
+        description: '舊四式策略 1/0'
+        type: choice
+        options: ['1', '0']
+        default: '1'
       exit_mode:
         description: '出場方案'
         type: choice
