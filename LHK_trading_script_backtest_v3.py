@@ -78,6 +78,7 @@ print(f"📊 門檻模式：{'百分位 (自適應)' if USE_PCT_MODE else '絕�
 # =========================================================================
 RS_TAG        = "🅱️ RS 核心"
 USE_RS_STRAT  = os.environ.get("USE_RS_STRAT", "1") == "1"
+USE_LEGACY    = os.environ.get("USE_LEGACY", "1") == "1" 
 RS_TOP_N      = int(os.environ.get("RS_TOP_N", "20"))
 
 # 👇 分層條件，全部預設關閉。一次只開一個測試！
@@ -1144,7 +1145,7 @@ for ticker in valid_tickers:
         tag_name, entry_metric = "", ""
         sl_p, tp_p, tp1_price, risk_per_share = 0, 0, 0, 0
 
-        if (is_vcp or is_bb_sqz):
+        if USE_LEGACY and (is_vcp or is_bb_sqz):
             if is_red_light: _blocked['swing_red_light'] += 1; continue # 熊市嚴禁突破建倉
 
             # 👇 新增：美股如果處於「🟡 震盪微牛」，假突破極多，直接封印！
@@ -1194,7 +1195,7 @@ for ticker in valid_tickers:
         # =================================================================
         # 獨立處理 1：⚡ 缺口動能 (爆發力強 -> 要求 1.5R 盈虧比)
         # =================================================================
-        elif is_gap_up:
+        elif USE_LEGACY and is_gap_up:
             if is_red_light: continue # 熊市嚴禁做「缺口高開」接火棒
             
             # 🌏 精英化過濾器（美股必用；日股由 GAP_JP_STRICT 控制）
@@ -1238,7 +1239,7 @@ for ticker in valid_tickers:
         # =================================================================
         # 獨立處理 2：📉 極度超賣 (搶反彈 -> 1R 提早鎖定利潤，防禦極端單邊市)
         # =================================================================
-        elif is_oversold:
+        elif USE_LEGACY and is_oversold:
             tag_name = "📉 極度超賣"
             
             # 超賣撈底需要極窄止損，錯咗即走！(改用 1.5 倍 ATR)
@@ -1362,6 +1363,11 @@ if USE_RS_STRAT and IS_REBAL_DAY:
         _cands.append((float(_r), _tk, _cp))
 
     _cands.sort(reverse=True)
+    if not _cands:
+        print(f"   ⚠️ 候選 0：us_ok={_us_ok} jp_ok={_jp_ok} "
+              f"| SPY {spx_price:.1f} vs 200MA {spx_200ma:.1f} "
+              f"| N225 {n225_price:.0f} vs 200MA {n225_200ma:.0f} "
+              f"| 池 {len(valid_tickers)} 隻")
 
     # ── (2) 板塊上限（L4，只喺開啟時先查 sector，避免拖慢）──
     _picks, _sec_cnt = [], {}
