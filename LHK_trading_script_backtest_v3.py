@@ -977,7 +977,8 @@ if USE_PCT_MODE and len(_dv_us) > 50 and len(_dv_jp) > 50:
     elite_liq   = _dv_us.quantile(PCT_ELITE_LIQ)      # 缺口策略專用
     elite_liq_jp = _dv_jp.quantile(PCT_ELITE_LIQ) 
 else:
-    us_thresh, jp_thresh, elite_liq = 20_000_000, 300_000_000, 50_000_000
+    us_thresh, jp_thresh = 20_000_000, 300_000_000
+    elite_liq, elite_liq_jp = 50_000_000, 1_000_000_000
 
 print(f"💧 流動性門檻 | 美股 ${us_thresh/1e6:.1f}M | 日股 ¥{jp_thresh/1e6:.0f}M | 精英 ${elite_liq/1e6:.0f}M / ¥{elite_liq_jp/1e6:.0f}M")
 
