@@ -1332,6 +1332,13 @@ if scan_errors:
 _prev_day    = closes.index[-2] if len(closes.index) >= 2 else None
 IS_REBAL_DAY = (_prev_day is not None) and (closes.index[-1].month != _prev_day.month)
 
+# 🛡️ 防止曆日切片令同一個交易日被處理多次而重複換倉
+_already = any(RS_TAG in str(t.get('tag', '')) and t.get('date') == today_str
+               for t in trade_history)
+if IS_REBAL_DAY and _already:
+    print(f"⏭️ [{today_str}] 今日已經換過倉，略過")
+    IS_REBAL_DAY = False
+
 if USE_RS_STRAT and IS_REBAL_DAY:
     print(f"🅱️ [{today_str}] 月度換倉日")
 
@@ -1395,7 +1402,7 @@ if USE_RS_STRAT and IS_REBAL_DAY:
         _t['last_px']    = round(float(_px), 2)
         _t['status']     = '✅ RS 換倉平倉'
         _t['close_date'] = today_str
-        _t['days_held']  = (pd.to_datetime(today_str) - pd.to_datetime(_t['date'])).days
+        _t['days_held'] = max(int(round((pd.to_datetime(today_str) - pd.to_datetime(_t['date'])).days * 21 / 30.44)), 1)
         if _t.get('fx_entry') and today_fx: _t['fx_exit'] = round(today_fx, 4)
         closed_this_run.append(_t)
 
@@ -1408,14 +1415,15 @@ if USE_RS_STRAT and IS_REBAL_DAY:
             'date': today_str, 'tk': _tk, 'px': round(_cp, 2),
             'sl': _sl, 'tp': None, 'initial_sl': _sl, 'tp1_price': None,
             'last_px': round(_cp, 2), 'status': 'OPEN', 'tag': RS_TAG,
+            'entry_rs': int(_r), 'curr_rs': int(_r),
             'entry_metric': f"RS: {int(_r)}", 'curr_metric': f"RS: {int(_r)}",
             'sources': TICKER_MAP.get(_tk, []),
             'period': ('IS' if today_str <= IS_END else 'OOS' if today_str <= OOS_END else 'FWD'),
             'partial_tp_hit': False,
         }
-        if RS_MAX_PER_SECTOR > 0:
-            _si = get_stock_info(_tk)
-            _info['sector'], _info['mcap'] = _si.get('sector', 'N/A'), _si.get('mcap', 0)
+        
+        _si = get_stock_info(_tk)
+        _info['sector'], _info['mcap'] = _si.get('sector', 'N/A'), _si.get('mcap', 0)
         if _tk.endswith('.T') and 'JPY=X' in current_prices and not pd.isna(current_prices['JPY=X']):
             _info['fx_entry'] = round(float(current_prices['JPY=X']), 4)
 
