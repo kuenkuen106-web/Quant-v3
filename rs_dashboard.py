@@ -83,12 +83,28 @@ def _analyse(trade_history, closes, cfg):
         print(f"⚠️ 每次開倉數 ({_avg:.1f}) 遠低於 Top{top_n} — "
               f"可能撈咗其他策略嘅單，或者換倉判斷有問題")
 
+    # 🛡️ 支援多月持倉：把每單回報幾何攤分到實際持有嘅每個月
+    _all_d = sorted(set(months) | {r['close_date'] for r in rows if r.get('close_date')})
+    _pos = {x: i for i, x in enumerate(_all_d)}
+    _held = {x: [] for x in _all_d}
+    _hold_names = {x: set() for x in _all_d}
+    for r in rows:
+        if not r['date']: continue
+        i0 = _pos[r['date']]
+        i1 = _pos.get(r.get('close_date'), i0 + 1)
+        n = max(i1 - i0, 1)
+        _mr = (1 + r['ret']) ** (1 / n) - 1
+        for k in range(i0, min(i1, len(_all_d))):
+            _held[_all_d[k]].append(_mr)
+            _hold_names[_all_d[k]].add(r['tk'])
+    months = [d for d in _all_d if _held[d]]
+
     m_ret, m_n, m_names, m_sec, m_mkt = [], [], [], [], []
     for d in months:
         c = cohorts[d]
-        m_ret.append(float(np.mean([x['ret'] for x in c])))
+        m_ret.append(float(np.mean(_held[d])))
         m_n.append(len(c))
-        m_names.append({x['tk'] for x in c})
+        m_names.append(_hold_names[d])
         sc = {}
         for x in c:
             sc[x['sector']] = sc.get(x['sector'], 0) + 1
