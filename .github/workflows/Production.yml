@@ -1,65 +1,71 @@
-name: v3 Production
+name: RS Production
 
 on:
   schedule:
-    # 🇯🇵 日股收市後結算
-    - cron: '17 8 * * 1-5'
-    # 🇺🇸 美股收市後結算
-    - cron: '43 22 * * 1-5'
-  workflow_dispatch: 
+    - cron: '17 8 * * 1-5'      # 🇯🇵 日股收市後（監察 only）
+    - cron: '43 22 * * 1-5'     # 🇺🇸 美股收市後（可換倉）
+  workflow_dispatch:
+    inputs:
+      force_rebalance:
+        description: '強制換倉（第一次建倉用）'
+        type: choice
+        options: ['0', '1']
+        default: '0'
 
 permissions:
   contents: write
+
+concurrency:
+  group: rs-production
+  cancel-in-progress: false
 
 jobs:
   run-strategy:
     runs-on: ubuntu-latest
     steps:
-      - name: 📥 讀取代碼 (Checkout)
-        uses: actions/checkout@v4 
-
-      - name: 🐍 設定 Python 環境
-        uses: actions/setup-python@v5
+      - uses: actions/checkout@v4
         with:
-          python-version: '3.10'
+          fetch-depth: 0
 
-      # 🌟 官方標準寫法：獲取今日日期
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
       - name: 獲取今日日期
         id: date_step
         run: echo "today=$(date +'%Y-%m-%d')" >> "$GITHUB_OUTPUT"
 
-      # 🌟 修正1：對準 Production 嘅快取路徑 (prod_market_data_cache.pkl) 同每日 Key
       - name: 💾 Cache market data
-        uses: actions/cache@v3
+        uses: actions/cache@v4
         with:
-          path: prod_market_data_cache.pkl
-          key: ${{ runner.os }}-prod-market-data-${{ steps.date_step.outputs.today }}
+          path: docs/market_data_cache.pkl
+          key: ${{ runner.os }}-prod-mkt-${{ steps.date_step.outputs.today }}
+          restore-keys: ${{ runner.os }}-prod-mkt-
 
-      - name: 📦 安裝依賴工具
+      - name: 📦 安裝依賴
         run: pip install -r requirements.txt
 
-      - name: 🚀 執行量化掃描與發送 Discord
+      - name: 🚀 執行策略
         env:
-          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          PYTHONUNBUFFERED: "1"
           DISCORD_SUMMARY_WEBHOOK: ${{ secrets.DISCORD_SUMMARY_WEBHOOK }}
-        run: python LHK_trading_script_v3.py
+          INITIAL_EQUITY: "100000"
+          FORCE_REBALANCE: ${{ inputs.force_rebalance || '0' }}
+          ALLOW_REBALANCE: ${{ github.event.schedule == '17 8 * * 1-5' && '0' || '1' }}
+        run: python rs_production.py
 
-      - name: 💾 更新 Dashboard 網頁檔案
+      - name: 💾 更新 Dashboard
         run: |
-          git config --global user.name "github-actions[bot]"
+          git config --global user.name  "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
-          
-          # 🌟 修正2：改為在根目錄設定 .gitignore，徹底封殺所有 .pkl 快取檔被推上 Git 嘅風險
-          echo "*.pkl" >> .gitignore
-          
-          # 2. 將 docs 資料夾改動 以及 .gitignore 加入暫存區
-          git add docs/ .gitignore
-          
-          # 3. 🌟 關鍵修正：先 Commit (打包存檔)，清空工作台
-          git commit -m "Auto-update Dashboard - Production" || echo "No changes to commit"
-          
-          # 4. 🌟 然後先 Pull (拉取代碼)，工作台乾淨咗，Rebase 就能完美融合
-          git pull origin main --rebase
-          
-          # 5. 提交變更並推送
-          git push
+          git add docs/
+          git commit -m "RS Production $(date +%F)" || { echo "無變更"; exit 0; }
+          for i in 1 2 3 4 5; do
+            if git pull --rebase --autostash origin main && git push origin main; then
+              echo "✅ 第 $i 次 push 成功"; exit 0
+            fi
+            git rebase --abort 2>/dev/null || true
+            echo "⚠️ 第 $i 次失敗，10 秒後重試"; sleep 10
+          done
+          echo "❌ push 失敗"; exit 1
