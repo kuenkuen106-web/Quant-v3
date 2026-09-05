@@ -373,9 +373,10 @@ if IS_REBAL:
             break
         _fx = today_fx if (r['mkt'] == 'JP' and today_fx) else None
         _budget = POSITION_SIZE * _fx if _fx else POSITION_SIZE
-        _s = int(_budget / r['px'])
         if r['mkt'] == 'JP':
-            _s = (_s // 100) * 100
+            _s = (int(_budget / r['px']) // 100) * 100      # 日股：一手 100 股
+        else:
+            _s = round(_budget / r['px'], 4)                # 美股：碎股，4 位小數
         if _s <= 0:
             _skipped.append({
                 'tk': r['tk'], 'rs': r['rs'], 'px': r['px'],
@@ -463,6 +464,8 @@ if trade_history:
 # MODULE 6 — Discord
 # =============================================================================
 print("⏳ [5/6] 發送通知...")
+def fmt_shares(s):
+    return f"{s:,.0f}" if float(s) == int(s) else f"{s:,.4f}"
 
 closed = [t for t in trade_history if t.get('status') != 'OPEN']
 wins = [t for t in closed if calc_pnl(t) > 0]
@@ -470,10 +473,10 @@ win_rate = round(len(wins) / len(closed) * 100, 1) if closed else 0
 
 if DISCORD_WEBHOOK:
     if IS_REBAL:
-        s_txt = "\n".join(f"🔴 **{o['tk']}** × {o['shares']} @ {o['unit']}{o['px']} "
+        s_txt = "\n".join(f"🔴 **{o['tk']}** × {fmt_shares(o['shares'])} @ {o['unit']}{o['px']} "
                           f"({'+' if o['pnl'] >= 0 else ''}${o['pnl']:,.0f})"
                           for o in sell_orders) or "無"
-        b_txt = "\n".join(f"🟢 **{o['tk']}** × {o['shares']} @ {o['unit']}{o['px']} (RS {o['rs']})"
+        b_txt = "\n".join(f"🟢 **{o['tk']}** × {fmt_shares(o['shares'])} @ {o['unit']}{o['px']} (RS {o['rs']})"
                           for o in buy_orders) or "無"
         sk_txt = ""
         if _skipped:
@@ -550,14 +553,14 @@ if IS_REBAL:
         if sell_orders:
             f.write("| 代號 | 股數 | 參考價 | 已實現 |\n|---|---|---|---|\n")
             for o in sell_orders:
-                f.write(f"| {o['tk']} | {o['shares']} | {o['unit']}{o['px']} | ${o['pnl']:,.0f} |\n")
+                f.write(f"| {o['tk']} | {fmt_shares(o['shares'])} | {o['unit']}{o['px']} | ${o['pnl']:,.0f} |\n")
         else:
             f.write("無\n")
 
         f.write(f"\n## 🟢 買入 ({len(buy_orders)})\n\n")
         f.write("| 代號 | 股數 | 參考價 | RS | 成本 |\n|---|---|---|---|---|\n")
         for o in buy_orders:
-            f.write(f"| {o['tk']} | {o['shares']} | {o['unit']}{o['px']} | {o['rs']} | {o['unit']}{o['cost']:,.0f} |\n")
+            f.write(f"| {o['tk']} | {fmt_shares(o['shares'])} | {o['unit']}{o['px']} | {o['rs']} | {o['unit']}{o['cost']:,.0f} |\n")
 
         f.write(f"\n## ⏸️ 保留 ({len(hold_list)})\n\n")
         f.write((", ".join(t['tk'] for t in hold_list) or "無") + "\n")
