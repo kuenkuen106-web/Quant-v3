@@ -1,0 +1,395 @@
+[
+    {
+        "date": "2026-09-04",
+        "tk": "SNDK",
+        "name": "Sandisk Corporation",
+        "px": 1740.0,
+        "shares": 2,
+        "last_px": 1740.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 100,
+        "curr_rs": 100,
+        "sector": "Technology",
+        "mcap": 254769070080,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "MRNA",
+        "name": "Moderna, Inc.",
+        "px": 145.55,
+        "shares": 34,
+        "last_px": 145.55,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Healthcare",
+        "mcap": 58108788736,
+        "mkt": "US",
+        "sources": [
+            "S&P500"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "MU",
+        "name": "Micron Technology, Inc.",
+        "px": 1016.59,
+        "shares": 4,
+        "last_px": 1016.59,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 1148129771520,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "5801.T",
+        "name": "FURUKAWA ELECTRIC CO",
+        "px": 3844.0,
+        "shares": 200,
+        "last_px": 3844.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Industrials",
+        "mcap": 2704240279552,
+        "mkt": "JP",
+        "sources": [
+            "NK225",
+            "TOPIX400"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "DELL",
+        "name": "Dell Technologies Inc.",
+        "px": 524.14,
+        "shares": 9,
+        "last_px": 524.14,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 338669076480,
+        "mkt": "US",
+        "sources": [
+            "S&P500"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "LITE",
+        "name": "Lumentum Holdings Inc.",
+        "px": 881.26,
+        "shares": 5,
+        "last_px": 881.26,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 79048572928,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "MRVL",
+        "name": "Marvell Technology, Inc.",
+        "px": 223.55,
+        "shares": 22,
+        "last_px": 223.55,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 200905424896,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "7389.T",
+        "name": "AICHI FINANCIAL GROUP INC",
+        "px": 1923.0,
+        "shares": 400,
+        "last_px": 1923.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Financial Services",
+        "mcap": 468698923008,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "CORT",
+        "name": "Corcept Therapeutics Incorporat",
+        "px": 111.62,
+        "shares": 44,
+        "last_px": 111.62,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Healthcare",
+        "mcap": 12065943552,
+        "mkt": "US",
+        "sources": [
+            "S&P600"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "HPE",
+        "name": "Hewlett Packard Enterprise Comp",
+        "px": 52.0,
+        "shares": 96,
+        "last_px": 52.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 69028167680,
+        "mkt": "US",
+        "sources": [
+            "S&P500"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "NBIS",
+        "name": "Nebius Group N.V.",
+        "px": 226.39,
+        "shares": 22,
+        "last_px": 226.39,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Communication Services",
+        "mcap": 61545304064,
+        "mkt": "US",
+        "sources": [
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "LFST",
+        "name": "LifeStance Health Group, Inc.",
+        "px": 12.73,
+        "shares": 392,
+        "last_px": 12.73,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "Healthcare",
+        "mcap": 4863567872,
+        "mkt": "US",
+        "sources": [
+            "S&P600"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "8368.T",
+        "name": "HYAKUGO BANK",
+        "px": 2376.0,
+        "shares": 300,
+        "last_px": 2376.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "Financial Services",
+        "mcap": 573541777408,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "7762.T",
+        "name": "CITIZEN WATCH CO LTD",
+        "px": 2613.0,
+        "shares": 200,
+        "last_px": 2613.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "Consumer Cyclical",
+        "mcap": 637555048448,
+        "mkt": "JP",
+        "sources": [
+            "NK225",
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "8386.T",
+        "name": "HYAKUJUSHI BANK",
+        "px": 3115.0,
+        "shares": 200,
+        "last_px": 3115.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "Financial Services",
+        "mcap": 352270974976,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "ARWR",
+        "name": "Arrowhead Pharmaceuticals, Inc.",
+        "px": 86.34,
+        "shares": 57,
+        "last_px": 86.34,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "Healthcare",
+        "mcap": 12195909632,
+        "mkt": "US",
+        "sources": [
+            "S&P400"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "8346.T",
+        "name": "TOHO BANK",
+        "px": 992.0,
+        "shares": 700,
+        "last_px": 992.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "Financial Services",
+        "mcap": 247888297984,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "RNG",
+        "name": "Ringcentral, Inc.",
+        "px": 73.39,
+        "shares": 68,
+        "last_px": 73.39,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "Technology",
+        "mcap": 6128517120,
+        "mkt": "US",
+        "sources": [
+            "S&P600"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "8366.T",
+        "name": "SHIGA BANK",
+        "px": 2862.0,
+        "shares": 200,
+        "last_px": 2862.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "Financial Services",
+        "mcap": 657914789888,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "HUM",
+        "name": "Humana Inc.",
+        "px": 401.54,
+        "shares": 12,
+        "last_px": 401.54,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "Healthcare",
+        "mcap": 48217047040,
+        "mkt": "US",
+        "sources": [
+            "S&P500"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    }
+]
