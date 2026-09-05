@@ -1,0 +1,298 @@
+[
+    {
+        "date": "2026-09-04",
+        "tk": "SNDK",
+        "name": "SNDK",
+        "px": 1740.0,
+        "shares": 2,
+        "last_px": 1740.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 100,
+        "curr_rs": 100,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "MRNA",
+        "name": "MRNA",
+        "px": 145.55,
+        "shares": 34,
+        "last_px": 145.55,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "S&P500"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "MU",
+        "name": "MU",
+        "px": 1016.59,
+        "shares": 4,
+        "last_px": 1016.59,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "5801.T",
+        "name": "5801.T",
+        "px": 3844.0,
+        "shares": 200,
+        "last_px": 3844.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "JP",
+        "sources": [
+            "NK225",
+            "TOPIX400"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "DELL",
+        "name": "DELL",
+        "px": 524.14,
+        "shares": 9,
+        "last_px": 524.14,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "S&P500"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "LITE",
+        "name": "LITE",
+        "px": 881.26,
+        "shares": 5,
+        "last_px": 881.26,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "MRVL",
+        "name": "MRVL",
+        "px": 223.55,
+        "shares": 22,
+        "last_px": 223.55,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "7389.T",
+        "name": "7389.T",
+        "px": 1923.0,
+        "shares": 400,
+        "last_px": 1923.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "CORT",
+        "name": "CORT",
+        "px": 111.62,
+        "shares": 44,
+        "last_px": 111.62,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "S&P600"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "HPE",
+        "name": "HPE",
+        "px": 52.0,
+        "shares": 96,
+        "last_px": 52.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "S&P500"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "NBIS",
+        "name": "NBIS",
+        "px": 226.39,
+        "shares": 22,
+        "last_px": 226.39,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "LFST",
+        "name": "LFST",
+        "px": 12.73,
+        "shares": 392,
+        "last_px": 12.73,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "US",
+        "sources": [
+            "S&P600"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "8368.T",
+        "name": "8368.T",
+        "px": 2376.0,
+        "shares": 300,
+        "last_px": 2376.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "7762.T",
+        "name": "7762.T",
+        "px": 2613.0,
+        "shares": 200,
+        "last_px": 2613.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "JP",
+        "sources": [
+            "NK225",
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "8386.T",
+        "name": "8386.T",
+        "px": 3115.0,
+        "shares": 200,
+        "last_px": 3115.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 98,
+        "curr_rs": 98,
+        "sector": "N/A",
+        "mcap": 0,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221
+    }
+]
