@@ -25,7 +25,8 @@ OUTPUT_DIR = "docs"
 CHARTS_DIR = os.path.join(OUTPUT_DIR, "charts")
 os.makedirs(CHARTS_DIR, exist_ok=True)
 
-DISCORD_WEBHOOK = os.environ.get("DISCORD_SUMMARY_WEBHOOK", "")
+DISCORD_WEBHOOK = os.environ.get("DISCORD_WEBHOOK_URL", "")
+DISCORD_REBAL  = os.environ.get("DISCORD_SUMMARY_WEBHOOK", "")
 
 HISTORY_FILE    = os.path.join(OUTPUT_DIR, "rs_trade_history.json")
 CSV_EXPORT_FILE = os.path.join(OUTPUT_DIR, "rs_trade_history.csv")
@@ -471,7 +472,7 @@ closed = [t for t in trade_history if t.get('status') != 'OPEN']
 wins = [t for t in closed if calc_pnl(t) > 0]
 win_rate = round(len(wins) / len(closed) * 100, 1) if closed else 0
 
-if DISCORD_WEBHOOK:
+if DISCORD_REBAL:
     if IS_REBAL:
         s_txt = "\n".join(f"🔴 **{o['tk']}** × {fmt_shares(o['shares'])} @ {o['unit']}{o['px']} "
                           f"({'+' if o['pnl'] >= 0 else ''}${o['pnl']:,.0f})"
@@ -495,7 +496,7 @@ if DISCORD_WEBHOOK:
         title, color = f"📊 每日監察 ({today_str})", 3447003
 
     try:
-        requests.post(DISCORD_WEBHOOK, json={"embeds": [{
+        requests.post(DISCORD_REBAL if IS_REBAL else DISCORD_WEBHOOK, json={"embeds": [{
             "title": title, "description": desc[:4000], "color": color,
             "fields": [
                 {"name": "💰 資金", "value": f"${EQUITY:,.0f}", "inline": True},
