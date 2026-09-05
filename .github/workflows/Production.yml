@@ -76,4 +76,4 @@ jobs:
         run: |
           curl -H "Content-Type: application/json" -d \
             "{\"content\":\"🚨 **RS Production 失敗** ($(date +%F)) — 如果今日係月頭，請手動檢查換倉\"}" \
-            "${{ secrets.DISCORD_SUMMARY_WEBHOOK }}"
+            "${{ secrets.DISCORD_WEBHOOK_URL }}"
