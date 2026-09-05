@@ -53,7 +53,7 @@ jobs:
           INITIAL_EQUITY: "100000"
           FORCE_REBALANCE: ${{ inputs.force_rebalance || '0' }}
           ALLOW_REBALANCE: ${{ github.event.schedule == '17 8 * * 1-5' && '0' || '1' }}
-        run: python rs_production.py
+        run: python LHK_trading_script_v3.py
 
       - name: 💾 更新 Dashboard
         run: |
