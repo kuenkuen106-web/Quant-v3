@@ -50,6 +50,7 @@ jobs:
         env:
           PYTHONUNBUFFERED: "1"
           DISCORD_SUMMARY_WEBHOOK: ${{ secrets.DISCORD_SUMMARY_WEBHOOK }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           INITIAL_EQUITY: "100000"
           FORCE_REBALANCE: ${{ inputs.force_rebalance || '0' }}
           ALLOW_REBALANCE: ${{ github.event.schedule == '17 8 * * 1-5' && '0' || '1' }}
