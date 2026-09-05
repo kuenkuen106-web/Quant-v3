@@ -75,8 +75,11 @@ def get_stock_info(tk):
         data = {'sector': info.get('sector', 'N/A'),
                 'name': info.get('shortName', tk),
                 'mcap': info.get('marketCap', 0)}
+        if data['sector'] == 'N/A':
+            return data                 # 失敗唔 cache，下次重試
+        time.sleep(0.3)                 # 避免 yfinance 限流
     except Exception:
-        data = {'sector': 'N/A', 'name': tk, 'mcap': 0}
+        return {'sector': 'N/A', 'name': tk, 'mcap': 0}
     STOCK_INFO_CACHE[tk] = data
     return data
 
@@ -336,6 +339,12 @@ if IS_REBAL and any(RS_TAG in t.get('tag', '') and t.get('date') == today_str
     print("⏭️ 今日已換過倉，略過")
     IS_REBAL = False
 
+# 🕐 日股時段唔換倉：嗰陣美股當日未開市，價格係 ffill 返尋日
+if os.environ.get("ALLOW_REBALANCE", "1") != "1" and not FORCE_REBALANCE:
+    if IS_REBAL:
+        print("⏭️ 日股時段唔換倉（美股價未更新），等美股收市後")
+    IS_REBAL = False
+
 # 排行榜（每日都出）
 ranking = []
 for tk in valid_tickers:
@@ -353,11 +362,35 @@ for tk in valid_tickers:
                     'unit': unit_of(tk), 'mkt': 'JP' if is_jp else 'US', 'trend': trend_ok})
 ranking.sort(key=lambda x: -x['rs'])
 
-sell_orders, buy_orders, hold_list = [], [], []
+sell_orders, buy_orders, hold_list, _skipped = [], [], [], []
 
 if IS_REBAL:
     print(f"🔔 [{today_str}] 換倉日")
-    picks = [r for r in ranking if r['trend']][:RS_TOP_N]
+    _elig = [r for r in ranking if r['trend']]
+    picks, _skipped = [], []
+    for r in _elig:
+        if len(picks) >= RS_TOP_N:
+            break
+        _fx = today_fx if (r['mkt'] == 'JP' and today_fx) else None
+        _budget = POSITION_SIZE * _fx if _fx else POSITION_SIZE
+        _s = int(_budget / r['px'])
+        if r['mkt'] == 'JP':
+            _s = (_s // 100) * 100
+        if _s <= 0:
+            _skipped.append({
+                'tk': r['tk'], 'rs': r['rs'], 'px': r['px'],
+                'unit': '¥' if r['mkt'] == 'JP' else '$',
+                'need': round(r['px'] * 100 / today_fx) if (r['mkt'] == 'JP' and today_fx) else round(r['px'])
+            })
+            continue
+        r['_shares'], r['_fx'] = _s, _fx
+        picks.append(r)
+
+    if _skipped:
+        print(f"   ⚠️ 資金不足一手，略過 {len(_skipped)} 隻："
+              + ", ".join(f"{s['tk']}(需${s['need']:,})" for s in _skipped[:8]))
+    if len(picks) < RS_TOP_N:
+        print(f"   ⚠️ 只湊到 {len(picks)}/{RS_TOP_N} 隻")
     pick_set = {r['tk'] for r in picks}
 
     for t in open_trades:
@@ -382,14 +415,7 @@ if IS_REBAL:
         tk, px, is_jp = r['tk'], r['px'], r['mkt'] == 'JP'
         if tk in held:
             continue
-        fx = today_fx if (is_jp and today_fx) else None
-        budget = POSITION_SIZE * fx if fx else POSITION_SIZE
-        shares = int(budget / px)
-        if is_jp:
-            shares = (shares // 100) * 100          # 日股一手 100 股
-        if shares <= 0:
-            print(f"   ⚠️ {tk} 資金不足一手，略過")
-            continue
+        fx, shares = r['_fx'], r['_shares']
         info = get_stock_info(tk)
         rec = {'date': today_str, 'tk': tk, 'name': info.get('name', tk),
                'px': px, 'shares': shares, 'last_px': px, 'status': 'OPEN',
@@ -449,10 +475,15 @@ if DISCORD_WEBHOOK:
                           for o in sell_orders) or "無"
         b_txt = "\n".join(f"🟢 **{o['tk']}** × {o['shares']} @ {o['unit']}{o['px']} (RS {o['rs']})"
                           for o in buy_orders) or "無"
+        sk_txt = ""
+        if _skipped:
+            _sk_txt = ("\n\n**⚠️ 資金不足略過 (%d)**\n" % len(_skipped)) + "\n".join(
+                f"`{s['tk']}` RS {s['rs']} · {s['unit']}{s['px']} · 一手需 ${s['need']:,}"
+                for s in _skipped[:10])
         desc = (f"**🔴 賣出 ({len(sell_orders)})**\n{s_txt}\n\n"
                 f"**🟢 買入 ({len(buy_orders)})**\n{b_txt}\n\n"
                 f"**⏸️ 保留 ({len(hold_list)})**\n" +
-                (", ".join(t['tk'] for t in hold_list) or "無"))
+                (", ".join(t['tk'] for t in hold_list) or "無") + _sk_txt)
         title, color = f"🔔 換倉指令 ({today_str})", 3066993
     else:
         top = "\n".join(f"`{i+1:>2}.` **{r['tk']}** RS {r['rs']} {r['unit']}{r['px']}"
@@ -502,8 +533,48 @@ build_dashboard(
     cfg={'top_n': RS_TOP_N, 'cost': ROUND_TRIP_COST,
          'ticket': POSITION_SIZE, 'tag': 'RS 核心'},
     regime=[{'label': '🇺🇸 美股', 'ok': bool(us_ok), 'text': us_regime},
-            {'label': '🇯🇵 日股', 'ok': bool(jp_ok), 'text': jp_regime}],
+            {'label': '🇯🇵 日股', 'ok': bool(jp_ok), 'text': jp_regime}]
+           + ([{'label': '⚠️ 略過', 'ok': False,
+                'text': f"{len(_skipped)} 隻資金不足"}] if _skipped else []),
 )
+
+# 📌 待執行指令：寫成 markdown，隨時查得返
+if IS_REBAL:
+    _md = os.path.join(OUTPUT_DIR, f"orders_{today_str}.md")
+    with open(_md, "w", encoding="utf-8") as f:
+        f.write(f"# 📌 待執行指令 · {today_str}\n\n")
+        f.write(f"> 資金 ${EQUITY:,.0f} · 每倉 ${POSITION_SIZE:,.0f}\n")
+        f.write(f"> **喺下一個交易日開市執行**\n\n")
+
+        f.write(f"## 🔴 賣出 ({len(sell_orders)})\n\n")
+        if sell_orders:
+            f.write("| 代號 | 股數 | 參考價 | 已實現 |\n|---|---|---|---|\n")
+            for o in sell_orders:
+                f.write(f"| {o['tk']} | {o['shares']} | {o['unit']}{o['px']} | ${o['pnl']:,.0f} |\n")
+        else:
+            f.write("無\n")
+
+        f.write(f"\n## 🟢 買入 ({len(buy_orders)})\n\n")
+        f.write("| 代號 | 股數 | 參考價 | RS | 成本 |\n|---|---|---|---|---|\n")
+        for o in buy_orders:
+            f.write(f"| {o['tk']} | {o['shares']} | {o['unit']}{o['px']} | {o['rs']} | {o['unit']}{o['cost']:,.0f} |\n")
+
+        f.write(f"\n## ⏸️ 保留 ({len(hold_list)})\n\n")
+        f.write((", ".join(t['tk'] for t in hold_list) or "無") + "\n")
+
+        if _skipped:
+            f.write(f"\n## ⚠️ 資金不足略過 ({len(_skipped)})\n\n")
+            f.write(f"> 日股一手 100 股，目前買得到嘅上限約 "
+                    f"¥{POSITION_SIZE*(today_fx or 150):,.0f}\n\n")
+            f.write("| 代號 | RS | 現價 | 一手需要 |\n|---|---|---|---|\n")
+            for s in _skipped:
+                f.write(f"| {s['tk']} | {s['rs']} | {s['unit']}{s['px']} | ${s['need']:,} |\n")
+
+        f.write("\n---\n\n### ✍️ 實際成交紀錄（自己填）\n\n")
+        f.write("| 代號 | 參考價 | 實際成交價 | 滑價 % |\n|---|---|---|---|\n")
+        for o in buy_orders:
+            f.write(f"| {o['tk']} | {o['unit']}{o['px']} | | |\n")
+    print(f"📌 指令已寫入 {_md}")
 
 print("\n🎉 完成")
 if IS_REBAL:
