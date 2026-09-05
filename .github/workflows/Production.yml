@@ -70,3 +70,10 @@ jobs:
             echo "⚠️ 第 $i 次失敗，10 秒後重試"; sleep 10
           done
           echo "❌ push 失敗"; exit 1
+
+      - name: 失敗通知
+        if: failure()
+        run: |
+          curl -H "Content-Type: application/json" -d \
+            "{\"content\":\"🚨 **RS Production 失敗** ($(date +%F)) — 如果今日係月頭，請手動檢查換倉\"}" \
+            "${{ secrets.DISCORD_SUMMARY_WEBHOOK }}"
