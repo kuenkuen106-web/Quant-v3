@@ -64,7 +64,7 @@
         "name": "FURUKAWA ELECTRIC CO",
         "px": 3844.0,
         "shares": 200,
-        "last_px": 3840.0,
+        "last_px": 3839.0,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -78,7 +78,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 154.485
+        "fx_exit": 153.727
     },
     {
         "date": "2026-09-04",
@@ -145,7 +145,7 @@
         "name": "AICHI FINANCIAL GROUP INC",
         "px": 1923.0,
         "shares": 400,
-        "last_px": 1911.0,
+        "last_px": 1926.0,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -158,7 +158,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 154.485
+        "fx_exit": 153.727
     },
     {
         "date": "2026-09-04",
@@ -189,7 +189,7 @@
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
-        "curr_rs": 99,
+        "curr_rs": 98,
         "sector": "Technology",
         "mcap": 69028167680,
         "mkt": "US",
@@ -242,7 +242,7 @@
         "name": "HYAKUGO BANK",
         "px": 2376.0,
         "shares": 300,
-        "last_px": 2379.0,
+        "last_px": 2368.0,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
@@ -255,7 +255,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 154.485
+        "fx_exit": 153.727
     },
     {
         "date": "2026-09-04",
@@ -263,7 +263,7 @@
         "name": "CITIZEN WATCH CO LTD",
         "px": 2613.0,
         "shares": 200,
-        "last_px": 2642.0,
+        "last_px": 2565.0,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
@@ -277,7 +277,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 154.485
+        "fx_exit": 153.727
     },
     {
         "date": "2026-09-04",
@@ -289,7 +289,7 @@
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
-        "curr_rs": 97,
+        "curr_rs": 98,
         "sector": "Financial Services",
         "mcap": 352270974976,
         "mkt": "JP",
@@ -298,7 +298,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 154.485
+        "fx_exit": 153.727
     },
     {
         "date": "2026-09-04",
@@ -310,7 +310,7 @@
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
-        "curr_rs": 98,
+        "curr_rs": 97,
         "sector": "Healthcare",
         "mcap": 12195909632,
         "mkt": "US",
@@ -325,7 +325,7 @@
         "name": "TOHO BANK",
         "px": 992.0,
         "shares": 700,
-        "last_px": 1001.0,
+        "last_px": 992.0,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
@@ -338,7 +338,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 154.485
+        "fx_exit": 153.727
     },
     {
         "date": "2026-09-04",
@@ -365,7 +365,7 @@
         "name": "SHIGA BANK",
         "px": 2862.0,
         "shares": 200,
-        "last_px": 2877.0,
+        "last_px": 2867.0,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
@@ -378,7 +378,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 154.485
+        "fx_exit": 153.727
     },
     {
         "date": "2026-09-04",
