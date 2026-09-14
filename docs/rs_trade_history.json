@@ -5,7 +5,7 @@
         "name": "Sandisk Corporation",
         "px": 1740.0,
         "shares": 2.8736,
-        "last_px": 1692.59,
+        "last_px": 1544.52,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 100,
@@ -25,7 +25,7 @@
         "name": "Moderna, Inc.",
         "px": 145.55,
         "shares": 34.3525,
-        "last_px": 136.62,
+        "last_px": 142.11,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -44,7 +44,7 @@
         "name": "Micron Technology, Inc.",
         "px": 1016.59,
         "shares": 4.9184,
-        "last_px": 977.41,
+        "last_px": 915.29,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -78,7 +78,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 153.554
+        "fx_exit": 154.682
     },
     {
         "date": "2026-09-04",
@@ -86,7 +86,7 @@
         "name": "Dell Technologies Inc.",
         "px": 524.14,
         "shares": 9.5394,
-        "last_px": 506.62,
+        "last_px": 527.76,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -105,7 +105,7 @@
         "name": "Lumentum Holdings Inc.",
         "px": 881.26,
         "shares": 5.6737,
-        "last_px": 935.7,
+        "last_px": 843.6,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -125,7 +125,7 @@
         "name": "Marvell Technology, Inc.",
         "px": 223.55,
         "shares": 22.3664,
-        "last_px": 226.96,
+        "last_px": 218.45,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -158,7 +158,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 153.554
+        "fx_exit": 154.682
     },
     {
         "date": "2026-09-04",
@@ -166,7 +166,7 @@
         "name": "Corcept Therapeutics Incorporat",
         "px": 111.62,
         "shares": 44.7948,
-        "last_px": 114.92,
+        "last_px": 113.01,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -185,7 +185,7 @@
         "name": "Hewlett Packard Enterprise Comp",
         "px": 52.0,
         "shares": 96.1538,
-        "last_px": 55.22,
+        "last_px": 55.49,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -204,11 +204,11 @@
         "name": "Nebius Group N.V.",
         "px": 226.39,
         "shares": 22.0858,
-        "last_px": 228.11,
+        "last_px": 213.11,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
-        "curr_rs": 98,
+        "curr_rs": 96,
         "sector": "Communication Services",
         "mcap": 61545304064,
         "mkt": "US",
@@ -223,7 +223,7 @@
         "name": "LifeStance Health Group, Inc.",
         "px": 12.73,
         "shares": 392.773,
-        "last_px": 13.0,
+        "last_px": 13.23,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
@@ -255,7 +255,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 153.554
+        "fx_exit": 154.682
     },
     {
         "date": "2026-09-04",
@@ -277,7 +277,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 153.554
+        "fx_exit": 154.682
     },
     {
         "date": "2026-09-04",
@@ -298,7 +298,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 153.554
+        "fx_exit": 154.682
     },
     {
         "date": "2026-09-04",
@@ -306,11 +306,11 @@
         "name": "Arrowhead Pharmaceuticals, Inc.",
         "px": 86.34,
         "shares": 57.9106,
-        "last_px": 82.76,
+        "last_px": 81.61,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
-        "curr_rs": 97,
+        "curr_rs": 96,
         "sector": "Healthcare",
         "mcap": 12195909632,
         "mkt": "US",
@@ -338,7 +338,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 153.554
+        "fx_exit": 154.682
     },
     {
         "date": "2026-09-04",
@@ -346,7 +346,7 @@
         "name": "Ringcentral, Inc.",
         "px": 73.39,
         "shares": 68.1292,
-        "last_px": 69.04,
+        "last_px": 70.74,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
@@ -378,7 +378,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 153.554
+        "fx_exit": 154.682
     },
     {
         "date": "2026-09-04",
@@ -386,7 +386,7 @@
         "name": "Humana Inc.",
         "px": 401.54,
         "shares": 12.4521,
-        "last_px": 400.73,
+        "last_px": 412.55,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
