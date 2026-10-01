@@ -5,7 +5,7 @@
         "name": "Sandisk Corporation",
         "px": 1740.0,
         "shares": 2.8736,
-        "last_px": 1749.03,
+        "last_px": 1739.89,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 100,
@@ -25,7 +25,7 @@
         "name": "Moderna, Inc.",
         "px": 145.55,
         "shares": 34.3525,
-        "last_px": 190.89,
+        "last_px": 192.57,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -44,7 +44,7 @@
         "name": "Micron Technology, Inc.",
         "px": 1016.59,
         "shares": 4.9184,
-        "last_px": 1076.27,
+        "last_px": 1065.11,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -64,7 +64,7 @@
         "name": "FURUKAWA ELECTRIC CO",
         "px": 3844.0,
         "shares": 200,
-        "last_px": 3856.0,
+        "last_px": 3937.0,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -78,7 +78,7 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 157.079
+        "fx_exit": 158.074
     },
     {
         "date": "2026-09-04",
@@ -86,7 +86,7 @@
         "name": "Dell Technologies Inc.",
         "px": 524.14,
         "shares": 9.5394,
-        "last_px": 543.84,
+        "last_px": 537.95,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -105,7 +105,7 @@
         "name": "Lumentum Holdings Inc.",
         "px": 881.26,
         "shares": 5.6737,
-        "last_px": 952.27,
+        "last_px": 971.26,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -125,7 +125,7 @@
         "name": "Marvell Technology, Inc.",
         "px": 223.55,
         "shares": 22.3664,
-        "last_px": 258.95,
+        "last_px": 264.21,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -141,51 +141,11 @@
     },
     {
         "date": "2026-09-04",
-        "tk": "7389.T",
-        "name": "AICHI FINANCIAL GROUP INC",
-        "px": 1923.0,
-        "shares": 400,
-        "last_px": 2083.0,
-        "status": "OPEN",
-        "tag": "🅱️ RS 核心",
-        "entry_rs": 99,
-        "curr_rs": 98,
-        "sector": "Financial Services",
-        "mcap": 468698923008,
-        "mkt": "JP",
-        "sources": [
-            "TOPIX500"
-        ],
-        "cfg": "N20|trd1|liq0.35",
-        "fx_entry": 156.221,
-        "fx_exit": 157.079
-    },
-    {
-        "date": "2026-09-04",
-        "tk": "CORT",
-        "name": "Corcept Therapeutics Incorporat",
-        "px": 111.62,
-        "shares": 44.7948,
-        "last_px": 116.03,
-        "status": "OPEN",
-        "tag": "🅱️ RS 核心",
-        "entry_rs": 99,
-        "curr_rs": 98,
-        "sector": "Healthcare",
-        "mcap": 12065943552,
-        "mkt": "US",
-        "sources": [
-            "S&P600"
-        ],
-        "cfg": "N20|trd1|liq0.35"
-    },
-    {
-        "date": "2026-09-04",
         "tk": "HPE",
         "name": "Hewlett Packard Enterprise Comp",
         "px": 52.0,
         "shares": 96.1538,
-        "last_px": 65.16,
+        "last_px": 63.89,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
@@ -199,18 +159,234 @@
         "cfg": "N20|trd1|liq0.35"
     },
     {
-        "date": "2026-09-04",
-        "tk": "NBIS",
-        "name": "Nebius Group N.V.",
-        "px": 226.39,
-        "shares": 22.0858,
-        "last_px": 239.37,
+        "date": "2026-10-01",
+        "tk": "MXL",
+        "name": "MaxLinear, Inc",
+        "px": 90.31,
+        "shares": 57.6177,
+        "last_px": 90.31,
         "status": "OPEN",
         "tag": "🅱️ RS 核心",
         "entry_rs": 99,
-        "curr_rs": 97,
-        "sector": "Communication Services",
-        "mcap": 61545304064,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 8190501888,
+        "mkt": "US",
+        "sources": [
+            "S&P600"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "8388.T",
+        "name": "AWA BANK",
+        "px": 2165.0,
+        "shares": 300,
+        "last_px": 2165.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Financial Services",
+        "mcap": 421227069440,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 158.074
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "AMD",
+        "name": "Advanced Micro Devices, Inc.",
+        "px": 611.76,
+        "shares": 8.5057,
+        "last_px": 611.76,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 998682918912,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "STX",
+        "name": "Seagate Technology Holdings PLC",
+        "px": 922.34,
+        "shares": 5.6416,
+        "last_px": 922.34,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 209733681152,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "OKTA",
+        "name": "Okta, Inc.",
+        "px": 209.11,
+        "shares": 24.8838,
+        "last_px": 209.11,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 36556804096,
+        "mkt": "US",
+        "sources": [
+            "S&P400"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "5301.T",
+        "name": "TOKAI CARBON CO",
+        "px": 2288.0,
+        "shares": 300,
+        "last_px": 2288.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Basic Materials",
+        "mcap": 463955918848,
+        "mkt": "JP",
+        "sources": [
+            "NK225",
+            "TOPIX400"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 158.074
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "INTC",
+        "name": "Intel Corporation",
+        "px": 120.23,
+        "shares": 43.2792,
+        "last_px": 120.23,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 635548401664,
+        "mkt": "US",
+        "sources": [
+            "S&P500",
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "COHU",
+        "name": "Cohu, Inc.",
+        "px": 68.14,
+        "shares": 76.3642,
+        "last_px": 68.14,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 3225640704,
+        "mkt": "US",
+        "sources": [
+            "S&P600"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "PENG",
+        "name": "Penguin Solutions, Inc.",
+        "px": 54.69,
+        "shares": 95.1446,
+        "last_px": 54.69,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 2802463232,
+        "mkt": "US",
+        "sources": [
+            "S&P600"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "6134.T",
+        "name": "FUJI CORPORATION",
+        "px": 7840.0,
+        "shares": 100,
+        "last_px": 7840.0,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Industrials",
+        "mcap": 690117607424,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX400"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 158.074
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "ILMN",
+        "name": "Illumina, Inc.",
+        "px": 273.68,
+        "shares": 19.0129,
+        "last_px": 273.68,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Healthcare",
+        "mcap": 41325678592,
+        "mkt": "US",
+        "sources": [
+            "S&P400"
+        ],
+        "cfg": "N20|trd1|liq0.35"
+    },
+    {
+        "date": "2026-10-01",
+        "tk": "ALAB",
+        "name": "Astera Labs, Inc.",
+        "px": 355.97,
+        "shares": 14.6177,
+        "last_px": 355.97,
+        "status": "OPEN",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 99,
+        "sector": "Technology",
+        "mcap": 61755494400,
         "mkt": "US",
         "sources": [
             "NDX100"
@@ -219,12 +395,77 @@
     },
     {
         "date": "2026-09-04",
+        "tk": "7389.T",
+        "name": "AICHI FINANCIAL GROUP INC",
+        "px": 1923.0,
+        "shares": 400,
+        "last_px": 1999.0,
+        "status": "✅ RS 換倉平倉",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 98,
+        "sector": "Financial Services",
+        "mcap": 468698923008,
+        "mkt": "JP",
+        "sources": [
+            "TOPIX500"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "fx_entry": 156.221,
+        "fx_exit": 158.074,
+        "close_date": "2026-10-01",
+        "days_held": 19
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "CORT",
+        "name": "Corcept Therapeutics Incorporat",
+        "px": 111.62,
+        "shares": 44.7948,
+        "last_px": 115.23,
+        "status": "✅ RS 換倉平倉",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 98,
+        "sector": "Healthcare",
+        "mcap": 12065943552,
+        "mkt": "US",
+        "sources": [
+            "S&P600"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "close_date": "2026-10-01",
+        "days_held": 19
+    },
+    {
+        "date": "2026-09-04",
+        "tk": "NBIS",
+        "name": "Nebius Group N.V.",
+        "px": 226.39,
+        "shares": 22.0858,
+        "last_px": 235.88,
+        "status": "✅ RS 換倉平倉",
+        "tag": "🅱️ RS 核心",
+        "entry_rs": 99,
+        "curr_rs": 96,
+        "sector": "Communication Services",
+        "mcap": 61545304064,
+        "mkt": "US",
+        "sources": [
+            "NDX100"
+        ],
+        "cfg": "N20|trd1|liq0.35",
+        "close_date": "2026-10-01",
+        "days_held": 19
+    },
+    {
+        "date": "2026-09-04",
         "tk": "LFST",
         "name": "LifeStance Health Group, Inc.",
         "px": 12.73,
         "shares": 392.773,
-        "last_px": 12.06,
-        "status": "OPEN",
+        "last_px": 12.03,
+        "status": "✅ RS 換倉平倉",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
         "curr_rs": 97,
@@ -234,7 +475,9 @@
         "sources": [
             "S&P600"
         ],
-        "cfg": "N20|trd1|liq0.35"
+        "cfg": "N20|trd1|liq0.35",
+        "close_date": "2026-10-01",
+        "days_held": 19
     },
     {
         "date": "2026-09-04",
@@ -242,11 +485,11 @@
         "name": "HYAKUGO BANK",
         "px": 2376.0,
         "shares": 300,
-        "last_px": 2594.0,
-        "status": "OPEN",
+        "last_px": 2506.0,
+        "status": "✅ RS 換倉平倉",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
-        "curr_rs": 99,
+        "curr_rs": 98,
         "sector": "Financial Services",
         "mcap": 573541777408,
         "mkt": "JP",
@@ -255,7 +498,9 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 157.079
+        "fx_exit": 158.074,
+        "close_date": "2026-10-01",
+        "days_held": 19
     },
     {
         "date": "2026-09-04",
@@ -263,11 +508,11 @@
         "name": "CITIZEN WATCH CO LTD",
         "px": 2613.0,
         "shares": 200,
-        "last_px": 2326.0,
-        "status": "OPEN",
+        "last_px": 2341.0,
+        "status": "✅ RS 換倉平倉",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
-        "curr_rs": 94,
+        "curr_rs": 95,
         "sector": "Consumer Cyclical",
         "mcap": 637555048448,
         "mkt": "JP",
@@ -277,7 +522,9 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 157.079
+        "fx_exit": 158.074,
+        "close_date": "2026-10-01",
+        "days_held": 19
     },
     {
         "date": "2026-09-04",
@@ -285,11 +532,11 @@
         "name": "HYAKUJUSHI BANK",
         "px": 3115.0,
         "shares": 200,
-        "last_px": 3255.0,
-        "status": "OPEN",
+        "last_px": 3160.0,
+        "status": "✅ RS 換倉平倉",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
-        "curr_rs": 98,
+        "curr_rs": 97,
         "sector": "Financial Services",
         "mcap": 352270974976,
         "mkt": "JP",
@@ -298,7 +545,9 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 157.079
+        "fx_exit": 158.074,
+        "close_date": "2026-10-01",
+        "days_held": 19
     },
     {
         "date": "2026-09-04",
@@ -306,8 +555,8 @@
         "name": "Arrowhead Pharmaceuticals, Inc.",
         "px": 86.34,
         "shares": 57.9106,
-        "last_px": 65.61,
-        "status": "OPEN",
+        "last_px": 65.45,
+        "status": "✅ RS 換倉平倉",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
         "curr_rs": 85,
@@ -317,7 +566,9 @@
         "sources": [
             "S&P400"
         ],
-        "cfg": "N20|trd1|liq0.35"
+        "cfg": "N20|trd1|liq0.35",
+        "close_date": "2026-10-01",
+        "days_held": 19
     },
     {
         "date": "2026-09-04",
@@ -325,8 +576,8 @@
         "name": "TOHO BANK",
         "px": 992.0,
         "shares": 700,
-        "last_px": 1135.0,
-        "status": "OPEN",
+        "last_px": 1076.0,
+        "status": "✅ RS 換倉平倉",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
         "curr_rs": 98,
@@ -338,7 +589,9 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 157.079
+        "fx_exit": 158.074,
+        "close_date": "2026-10-01",
+        "days_held": 19
     },
     {
         "date": "2026-09-04",
@@ -346,8 +599,8 @@
         "name": "Ringcentral, Inc.",
         "px": 73.39,
         "shares": 68.1292,
-        "last_px": 75.86,
-        "status": "OPEN",
+        "last_px": 74.7,
+        "status": "✅ RS 換倉平倉",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
         "curr_rs": 98,
@@ -357,7 +610,9 @@
         "sources": [
             "S&P600"
         ],
-        "cfg": "N20|trd1|liq0.35"
+        "cfg": "N20|trd1|liq0.35",
+        "close_date": "2026-10-01",
+        "days_held": 19
     },
     {
         "date": "2026-09-04",
@@ -365,8 +620,8 @@
         "name": "SHIGA BANK",
         "px": 2862.0,
         "shares": 200,
-        "last_px": 3075.0,
-        "status": "OPEN",
+        "last_px": 2982.0,
+        "status": "✅ RS 換倉平倉",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
         "curr_rs": 98,
@@ -378,7 +633,9 @@
         ],
         "cfg": "N20|trd1|liq0.35",
         "fx_entry": 156.221,
-        "fx_exit": 157.079
+        "fx_exit": 158.074,
+        "close_date": "2026-10-01",
+        "days_held": 19
     },
     {
         "date": "2026-09-04",
@@ -386,8 +643,8 @@
         "name": "Humana Inc.",
         "px": 401.54,
         "shares": 12.4521,
-        "last_px": 389.71,
-        "status": "OPEN",
+        "last_px": 381.57,
+        "status": "✅ RS 換倉平倉",
         "tag": "🅱️ RS 核心",
         "entry_rs": 98,
         "curr_rs": 94,
@@ -397,6 +654,8 @@
         "sources": [
             "S&P500"
         ],
-        "cfg": "N20|trd1|liq0.35"
+        "cfg": "N20|trd1|liq0.35",
+        "close_date": "2026-10-01",
+        "days_held": 19
     }
 ]
