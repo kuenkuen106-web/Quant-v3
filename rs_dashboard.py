@@ -57,6 +57,18 @@ def _analyse(trade_history, closes, cfg):
     if not closed:
         print(f"⚠️ 揾唔到任何 tag 含「{tag}」嘅已結案交易 — dashboard 會係空白")
 
+    _fp, _basis = 0.0, 0.0
+    for t in opens:
+        _sh, _px = t.get('shares', 0), t.get('px', 0)
+        if not _sh or not _px: continue
+        _fe = t.get('fx_entry'); _fxx = t.get('fx_exit') or _fe
+        _v = (t.get('last_px', _px) - _px) * _sh
+        if _fe and _fxx and _fxx > 0: _v /= _fxx
+        _fp += _v
+        _basis += _px * _sh / (_fe if _fe else 1)
+    live = {'n': len(opens), 'pnl': round(_fp, 0), 'basis': round(_basis, 0),
+            'pct': round(_fp / _basis * 100, 2) if _basis else 0}
+    
     # ---- 逐單回報（扣成本）----
     rows = []
     for t in closed:
@@ -293,6 +305,7 @@ def _analyse(trade_history, closes, cfg):
             'cost_drag': round(cost_drag * 100, 2),
             'top_n': top_n,
         },
+        'live': live,
     }
 
 
@@ -319,6 +332,7 @@ _TPL = r"""<!DOCTYPE html>
 
 <!-- 核心 KPI -->
 <div class="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-8 gap-2 mb-4" id="kpi-row"></div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-2 mb-4" id="live-row"></div>
 
 <!-- ① 資金曲線 -->
 <div class="card mb-4">
@@ -393,6 +407,7 @@ _TPL = r"""<!DOCTYPE html>
       <th class="p-2">代號</th><th class="p-2">板塊</th><th class="p-2">買入日</th>
       <th class="p-2 text-center">進場RS</th><th class="p-2 text-center">現時RS</th>
       <th class="p-2 text-right">買入價</th><th class="p-2 text-right">現價</th>
+      <th class="p-2 text-right">股數</th><th class="p-2 text-right">浮動 P&L</th>
       <th class="p-2 text-right">回報</th></tr></thead>
     <tbody id="open-tbody"></tbody></table></div>
 </div>
@@ -424,6 +439,18 @@ const kpis = [
 ];
 document.getElementById('kpi-row').innerHTML = kpis.map(k=>
   `<div class="bg-slate-800/50 p-3 rounded-xl border border-slate-700 text-center">
+     <div class="text-[9px] text-slate-400 uppercase font-bold">${k[0]}</div>
+     <div class="text-lg font-black ${k[2]}">${k[1]}</div></div>`).join('');
+
+const LV = D.live || {n:0,pnl:0,basis:0,pct:0};
+const lv = [
+  ['目前持倉', LV.n + ' 隻', 'text-cyan-400'],
+  ['持倉成本', '$' + LV.basis.toLocaleString(), 'text-slate-200'],
+  ['浮動盈虧', (LV.pnl>=0?'+':'') + '$' + LV.pnl.toLocaleString(), LV.pnl>=0?'text-emerald-400':'text-red-400'],
+  ['浮動回報', (LV.pct>=0?'+':'') + LV.pct + '%', LV.pct>=0?'text-emerald-400':'text-red-400'],
+];
+document.getElementById('live-row').innerHTML = lv.map(k=>
+  `<div class="bg-slate-800/50 p-3 rounded-xl border border-cyan-700/40 text-center">
      <div class="text-[9px] text-slate-400 uppercase font-bold">${k[0]}</div>
      <div class="text-lg font-black ${k[2]}">${k[1]}</div></div>`).join('');
 
@@ -557,7 +584,12 @@ document.getElementById('bot-t').innerHTML = tRow(D.bot_trades,'text-red-400');
 const opens = H.filter(t=>t.status==='OPEN');
 document.getElementById('open-tbody').innerHTML = opens.length ? opens.map(t=>{
   const u = t.tk.endsWith('.T') ? '¥' : '$';
-  const pct = t.px ? ((t.last_px/t.px-1)*100).toFixed(2) : '0.00';
+  const sh = t.shares || 0;
+  const fe = t.fx_entry, fx = t.fx_exit || fe;
+  let pl = (t.last_px - t.px) * sh;
+  if (fe && fx) pl = pl / fx;
+  const base = t.px * sh / (fe || 1);
+  const pct = base ? (pl/base*100).toFixed(2) : '0.00';
   const c = pct>=0 ? 'text-emerald-400':'text-red-400';
   return `<tr class="border-b border-slate-700/50 hover:bg-slate-800">
    <td class="p-2 font-bold text-white">${t.tk}</td>
@@ -566,6 +598,8 @@ document.getElementById('open-tbody').innerHTML = opens.length ? opens.map(t=>{
    <td class="p-2 text-center text-slate-400">${t.entry_rs??'-'}</td>
    <td class="p-2 text-center text-lime-400 font-bold">${t.curr_rs??'-'}</td>
    <td class="p-2 text-right">${u}${t.px}</td><td class="p-2 text-right text-white">${u}${t.last_px}</td>
+   <td class="p-2 text-right text-slate-400">${sh.toLocaleString(undefined,{maximumFractionDigits:2})}</td>
+   <td class="p-2 text-right font-mono ${c}">${pl>=0?'+':''}$${pl.toFixed(0)}</td>
    <td class="p-2 text-right font-black font-mono ${c}">${pct>=0?'+':''}${pct}%</td></tr>`;
 }).join('') : '<tr><td colspan="8" class="p-4 text-center text-slate-500">暫無持倉</td></tr>';
 </script></body></html>"""
