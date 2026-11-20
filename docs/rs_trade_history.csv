@@ -1,24 +1,24 @@
 ﻿date,close_date,tk,name,tag,mkt,sector,entry_rs,curr_rs,px,last_px,shares,days_held,status,fx_entry,fx_exit,mcap,sources,cfg
-2026-09-04,,SNDK,Sandisk Corporation,🅱️ RS 核心,US,Technology,100,98,1740.0,94.39,2.8736,,OPEN,,,254769070080,"['S&P500', 'NDX100']",N20|trd1|liq0.35
-2026-09-04,,MRNA,"Moderna, Inc.",🅱️ RS 核心,US,Healthcare,99,100,145.55,196.79,34.3525,,OPEN,,,58108788736,['S&P500'],N20|trd1|liq0.35
-2026-09-04,,MU,"Micron Technology, Inc.",🅱️ RS 核心,US,Technology,99,97,1016.59,690.44,4.9184,,OPEN,,,1148129771520,"['S&P500', 'NDX100']",N20|trd1|liq0.35
-2026-09-04,,5801.T,FURUKAWA ELECTRIC CO,🅱️ RS 核心,JP,Industrials,99,18,3844.0,1627.0,200,,OPEN,156.221,159.205,2704240279552,"['NK225', 'TOPIX400']",N20|trd1|liq0.35
-2026-09-04,,DELL,Dell Technologies Inc.,🅱️ RS 核心,US,Technology,99,96,524.14,313.11,9.5394,,OPEN,,,338669076480,['S&P500'],N20|trd1|liq0.35
-2026-09-04,,LITE,Lumentum Holdings Inc.,🅱️ RS 核心,US,Technology,99,67,881.26,551.07,5.6737,,OPEN,,,79048572928,"['S&P500', 'NDX100']",N20|trd1|liq0.35
-2026-09-04,,MRVL,"Marvell Technology, Inc.",🅱️ RS 核心,US,Technology,99,45,223.55,138.47,22.3664,,OPEN,,,200905424896,"['S&P500', 'NDX100']",N20|trd1|liq0.35
-2026-09-04,,HPE,Hewlett Packard Enterprise Comp,🅱️ RS 核心,US,Technology,99,96,52.0,45.78,96.1538,,OPEN,,,69028167680,['S&P500'],N20|trd1|liq0.35
-2026-10-01,,MXL,"MaxLinear, Inc",🅱️ RS 核心,US,Technology,99,95,90.31,48.13,57.6177,,OPEN,,,8190501888,['S&P600'],N20|trd1|liq0.35
-2026-10-01,,8388.T,AWA BANK,🅱️ RS 核心,JP,Financial Services,99,98,2165.0,1686.0,300,,OPEN,158.074,159.205,421227069440,['TOPIX500'],N20|trd1|liq0.35
-2026-10-01,,AMD,"Advanced Micro Devices, Inc.",🅱️ RS 核心,US,Technology,99,95,611.76,489.19,8.5057,,OPEN,,,998682918912,"['S&P500', 'NDX100']",N20|trd1|liq0.35
-2026-10-01,,STX,Seagate Technology Holdings PLC,🅱️ RS 核心,US,Technology,99,71,922.34,521.39,5.6416,,OPEN,,,209733681152,"['S&P500', 'NDX100']",N20|trd1|liq0.35
-2026-10-01,,OKTA,"Okta, Inc.",🅱️ RS 核心,US,Technology,99,99,209.11,195.61,24.8838,,OPEN,,,36556804096,['S&P400'],N20|trd1|liq0.35
-2026-10-01,,5301.T,TOKAI CARBON CO,🅱️ RS 核心,JP,Basic Materials,99,59,2288.0,1430.5,300,,OPEN,158.074,159.205,463955918848,"['NK225', 'TOPIX400']",N20|trd1|liq0.35
-2026-10-01,,INTC,Intel Corporation,🅱️ RS 核心,US,Technology,99,13,120.23,55.72,43.2792,,OPEN,,,635548401664,"['S&P500', 'NDX100']",N20|trd1|liq0.35
-2026-10-01,,COHU,"Cohu, Inc.",🅱️ RS 核心,US,Technology,99,69,68.14,40.79,76.3642,,OPEN,,,3225640704,['S&P600'],N20|trd1|liq0.35
-2026-10-01,,PENG,"Penguin Solutions, Inc.",🅱️ RS 核心,US,Technology,99,89,54.69,43.21,95.1446,,OPEN,,,2802463232,['S&P600'],N20|trd1|liq0.35
-2026-10-01,,6134.T,FUJI CORPORATION,🅱️ RS 核心,JP,Industrials,99,17,7840.0,4356.0,100,,OPEN,158.074,159.205,690117607424,['TOPIX400'],N20|trd1|liq0.35
-2026-10-01,,ILMN,"Illumina, Inc.",🅱️ RS 核心,US,Healthcare,99,93,273.68,200.66,19.0129,,OPEN,,,41325678592,['S&P400'],N20|trd1|liq0.35
-2026-10-01,,ALAB,"Astera Labs, Inc.",🅱️ RS 核心,US,Technology,99,39,355.97,216.75,14.6177,,OPEN,,,61755494400,['NDX100'],N20|trd1|liq0.35
+2026-09-04,,SNDK,Sandisk Corporation,🅱️ RS 核心,US,Technology,100,96,1740.0,80.52,2.8736,,OPEN,,,254769070080,"['S&P500', 'NDX100']",N20|trd1|liq0.35
+2026-09-04,,MRNA,"Moderna, Inc.",🅱️ RS 核心,US,Healthcare,99,100,145.55,199.16,34.3525,,OPEN,,,58108788736,['S&P500'],N20|trd1|liq0.35
+2026-09-04,,MU,"Micron Technology, Inc.",🅱️ RS 核心,US,Technology,99,94,1016.59,605.96,4.9184,,OPEN,,,1148129771520,"['S&P500', 'NDX100']",N20|trd1|liq0.35
+2026-09-04,,5801.T,FURUKAWA ELECTRIC CO,🅱️ RS 核心,JP,Industrials,99,35,3844.0,1855.0,200,,OPEN,156.221,158.699,2704240279552,"['NK225', 'TOPIX400']",N20|trd1|liq0.35
+2026-09-04,,DELL,Dell Technologies Inc.,🅱️ RS 核心,US,Technology,99,91,524.14,279.57,9.5394,,OPEN,,,338669076480,['S&P500'],N20|trd1|liq0.35
+2026-09-04,,LITE,Lumentum Holdings Inc.,🅱️ RS 核心,US,Technology,99,38,881.26,474.7,5.6737,,OPEN,,,79048572928,"['S&P500', 'NDX100']",N20|trd1|liq0.35
+2026-09-04,,MRVL,"Marvell Technology, Inc.",🅱️ RS 核心,US,Technology,99,30,223.55,124.45,22.3664,,OPEN,,,200905424896,"['S&P500', 'NDX100']",N20|trd1|liq0.35
+2026-09-04,,HPE,Hewlett Packard Enterprise Comp,🅱️ RS 核心,US,Technology,99,94,52.0,41.48,96.1538,,OPEN,,,69028167680,['S&P500'],N20|trd1|liq0.35
+2026-10-01,,MXL,"MaxLinear, Inc",🅱️ RS 核心,US,Technology,99,87,90.31,42.33,57.6177,,OPEN,,,8190501888,['S&P600'],N20|trd1|liq0.35
+2026-10-01,,8388.T,AWA BANK,🅱️ RS 核心,JP,Financial Services,99,98,2165.0,1752.0,300,,OPEN,158.074,158.699,421227069440,['TOPIX500'],N20|trd1|liq0.35
+2026-10-01,,AMD,"Advanced Micro Devices, Inc.",🅱️ RS 核心,US,Technology,99,89,611.76,435.52,8.5057,,OPEN,,,998682918912,"['S&P500', 'NDX100']",N20|trd1|liq0.35
+2026-10-01,,STX,Seagate Technology Holdings PLC,🅱️ RS 核心,US,Technology,99,45,922.34,457.93,5.6416,,OPEN,,,209733681152,"['S&P500', 'NDX100']",N20|trd1|liq0.35
+2026-10-01,,OKTA,"Okta, Inc.",🅱️ RS 核心,US,Technology,99,99,209.11,194.27,24.8838,,OPEN,,,36556804096,['S&P400'],N20|trd1|liq0.35
+2026-10-01,,5301.T,TOKAI CARBON CO,🅱️ RS 核心,JP,Basic Materials,99,68,2288.0,1510.5,300,,OPEN,158.074,158.699,463955918848,"['NK225', 'TOPIX400']",N20|trd1|liq0.35
+2026-10-01,,INTC,Intel Corporation,🅱️ RS 核心,US,Technology,99,12,120.23,53.12,43.2792,,OPEN,,,635548401664,"['S&P500', 'NDX100']",N20|trd1|liq0.35
+2026-10-01,,COHU,"Cohu, Inc.",🅱️ RS 核心,US,Technology,99,50,68.14,36.86,76.3642,,OPEN,,,3225640704,['S&P600'],N20|trd1|liq0.35
+2026-10-01,,PENG,"Penguin Solutions, Inc.",🅱️ RS 核心,US,Technology,99,73,54.69,37.62,95.1446,,OPEN,,,2802463232,['S&P600'],N20|trd1|liq0.35
+2026-10-01,,6134.T,FUJI CORPORATION,🅱️ RS 核心,JP,Industrials,99,20,7840.0,4655.0,100,,OPEN,158.074,158.699,690117607424,['TOPIX400'],N20|trd1|liq0.35
+2026-10-01,,ILMN,"Illumina, Inc.",🅱️ RS 核心,US,Healthcare,99,91,273.68,193.8,19.0129,,OPEN,,,41325678592,['S&P400'],N20|trd1|liq0.35
+2026-10-01,,ALAB,"Astera Labs, Inc.",🅱️ RS 核心,US,Technology,99,21,355.97,184.98,14.6177,,OPEN,,,61755494400,['NDX100'],N20|trd1|liq0.35
 2026-09-04,2026-10-01,7389.T,AICHI FINANCIAL GROUP INC,🅱️ RS 核心,JP,Financial Services,99,98,1923.0,1999.0,400,19,✅ RS 換倉平倉,156.221,158.074,468698923008,['TOPIX500'],N20|trd1|liq0.35
 2026-09-04,2026-10-01,CORT,Corcept Therapeutics Incorporat,🅱️ RS 核心,US,Healthcare,99,98,111.62,115.23,44.7948,19,✅ RS 換倉平倉,,,12065943552,['S&P600'],N20|trd1|liq0.35
 2026-09-04,2026-10-01,NBIS,Nebius Group N.V.,🅱️ RS 核心,US,Communication Services,99,96,226.39,235.88,22.0858,19,✅ RS 換倉平倉,,,61545304064,['NDX100'],N20|trd1|liq0.35
